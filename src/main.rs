@@ -6,7 +6,7 @@ use std::{env, error::Error, net::SocketAddr, sync::Arc};
 use axum::{Router, http::StatusCode, routing::get};
 use controller::redirect_controller;
 use data::{RedirectRepo, SqliteService};
-use sqlx::{Executor, migrate::MigrateDatabase};
+use sqlx::migrate::MigrateDatabase;
 use tokio::signal;
 
 #[derive(Clone)]
@@ -27,16 +27,8 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
         sqlx::Sqlite::create_database(&db_file).await?;
     }
     let pool = sqlx::sqlite::SqlitePool::connect(&db_file).await?;
-    let create_table_query = r#"
-        CREATE TABLE IF NOT EXISTS redirects (
-              id INTEGER NOT NULL PRIMARY KEY,
-              alias TEXT NOT NULL UNIQUE,
-              url TEXT NOT NULL
-        );
 
-        CREATE INDEX IF NOT EXISTS idx_redirects_alias ON redirects(alias);
-        "#;
-    pool.execute(create_table_query).await?;
+    sqlx::migrate!("./migrations").run(&pool).await?;
 
     let dbservice = SqliteService::new(pool.clone());
 
