@@ -16,11 +16,12 @@ struct AppState {
 #[tokio::main]
 async fn main() {
     if let Err(e) = run_app().await {
-        println!("Via-Aliases encountered an error: {}", e);
+        eprintln!("Via-Alias encountered an error: {}", e);
     }
 }
 
 async fn run_app() -> Result<(), Box<dyn Error>> {
+    println!("Starting Via-Alias");
     let db_file_env = env::var("VIA_ALIAS_DB");
     let db_file = db_file_env.unwrap_or_else(|_| "via-alias.db".to_string());
     if !sqlx::Sqlite::database_exists(&db_file).await? {
