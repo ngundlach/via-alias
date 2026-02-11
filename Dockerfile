@@ -1,33 +1,26 @@
 ARG APP_NAME=via-alias
-ARG DATA_DIR=/var/lib/via-alias
+ARG DATA_DIR=/via_data/via-alias
 
-FROM rust:1.89-slim as builder
+FROM rust:1.93-alpine as builder
 
 ARG APP_NAME
 WORKDIR /app
 
 COPY Cargo.toml Cargo.lock ./
 
-# Create a dummy main.rs to cache dependencies
-RUN mkdir src && \
-  echo "fn main() {}" > src/main.rs && \
-  cargo build --release && \
-  rm -rf src
-
 COPY src ./src
+COPY migrations ./migrations
 
 RUN cargo build --release
 
-FROM debian:bookworm-slim
+FROM alpine:3.23.3
+
 ARG APP_NAME
 ARG DATA_DIR
 ENV VIA_ALIAS_DB=${DATA_DIR}/via-alias.db
 
-RUN apt-get update && \
-  apt-get install -y ca-certificates && \
-  rm -rf /var/lib/apt/lists/*
-
-RUN useradd -m -u 1000 appuser
+RUN addgroup -g 1000 appuser && \
+  adduser -D -u 1000 -G appuser appuser
 
 RUN mkdir -p ${DATA_DIR} && \
   chown -R appuser:appuser ${DATA_DIR}
