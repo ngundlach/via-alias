@@ -4,7 +4,7 @@ pub mod redirect_controller {
         extract::{Path, State},
         http::StatusCode,
         response::{IntoResponse, Redirect},
-        routing::{get, post, put},
+        routing::{get, patch, post},
     };
 
     use crate::{AppState, model::RedirectObject};
@@ -16,7 +16,7 @@ pub mod redirect_controller {
             .route("/", post(create_redirect_handler))
             .route("/all", get(get_all_redirects_handler))
             .route("/{alias}", axum::routing::delete(delete_redirect_handler))
-            .route("/{alias}", put(update_redirect_handler))
+            .route("/{alias}", patch(update_redirect_handler))
             .with_state(app_state)
     }
 
