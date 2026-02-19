@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Deserialize, Serialize, sqlx::FromRow, Debug, Clone)]
+#[derive(Default, Deserialize, Serialize, sqlx::FromRow, Debug, Clone, PartialEq)]
 pub struct RedirectDTO {
     pub alias: String,
     pub url: String,
