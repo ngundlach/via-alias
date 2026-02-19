@@ -1,4 +1,4 @@
 mod login;
-mod redirectcontroller;
+mod redirect;
 
-pub use self::redirectcontroller::redirect_controller;
+pub use self::redirect::redirect_controller;
