@@ -73,6 +73,7 @@ impl RedirectRepo for SqliteService {
 
 #[cfg(test)]
 mod tests {
+    use crate::data::DbServiceError;
     use crate::data::RedirectRepo;
     use crate::data::SqliteService;
     use crate::model::RedirectDTO;
@@ -162,6 +163,7 @@ mod tests {
 
         let result = service.create_redirect(&duplicate).await;
         assert!(result.is_err());
+        assert!(matches!(result, Err(DbServiceError::DatabaseError(_))));
     }
 
     #[tokio::test]
@@ -196,6 +198,7 @@ mod tests {
         assert!(result.is_err());
         let notfound = read_from_test_db("somewrongalias", &pool).await;
         assert!(notfound.is_err());
+        assert!(matches!(result, Err(DbServiceError::NotFoundError)));
     }
 
     #[tokio::test]
@@ -220,6 +223,7 @@ mod tests {
         let result = service.read_redirect_by_alias("somealias").await;
 
         assert!(result.is_err());
+        assert!(matches!(result, Err(DbServiceError::NotFoundError)));
     }
 
     #[tokio::test]
@@ -281,6 +285,7 @@ mod tests {
         let result = service.delete_redirect("invalidalias").await;
 
         assert!(result.is_err());
+        assert!(matches!(result, Err(DbServiceError::NotFoundError)));
         let updated_list = read_all_from_test_db(&pool).await;
         assert_eq!(updated_list.len(), 3);
         for dto in &dtos {
