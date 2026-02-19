@@ -45,7 +45,7 @@ pub mod redirect_controller {
     ) -> impl IntoResponse {
         let query = db.create_redirect(&payload).await;
         match query {
-            Ok(_) => (StatusCode::OK, Json(payload)).into_response(),
+            Ok(_) => (StatusCode::CREATED, Json(payload)).into_response(),
             Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
     }
