@@ -1,5 +1,5 @@
-mod redirect;
+mod redirect_dto;
 
-pub use crate::model::redirect::RedirectObject;
-pub use crate::model::redirect::RedirectObjectList;
-pub use crate::model::redirect::UpdateUrlObject;
+pub use self::redirect_dto::RedirectDTO;
+pub use self::redirect_dto::RedirectListDTO;
+pub use self::redirect_dto::UpdateUrlDTO;

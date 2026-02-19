@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 
 use super::{RedirectRepo, error::DbServiceError};
-use crate::model::{RedirectObject, RedirectObjectList, UpdateUrlObject};
+use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
 #[derive(Clone)]
 pub struct SqliteService {
     db: Pool<Sqlite>,
@@ -14,15 +14,15 @@ impl SqliteService {
 }
 #[async_trait]
 impl RedirectRepo for SqliteService {
-    async fn read_redirect_by_alias(&self, alias: &str) -> Result<RedirectObject, DbServiceError> {
-        sqlx::query_as::<_, RedirectObject>("SELECT alias, url FROM redirects WHERE alias = $1;")
+    async fn read_redirect_by_alias(&self, alias: &str) -> Result<RedirectDTO, DbServiceError> {
+        sqlx::query_as::<_, RedirectDTO>("SELECT alias, url FROM redirects WHERE alias = $1;")
             .bind(alias)
             .fetch_one(&self.db)
             .await
             .map_err(DbServiceError::from)
     }
 
-    async fn create_redirect(&self, redirect: &RedirectObject) -> Result<(), DbServiceError> {
+    async fn create_redirect(&self, redirect: &RedirectDTO) -> Result<(), DbServiceError> {
         sqlx::query("INSERT INTO redirects (alias, url) VALUES ($1, $2);")
             .bind(&redirect.alias)
             .bind(&redirect.url)
@@ -32,12 +32,12 @@ impl RedirectRepo for SqliteService {
         Ok(())
     }
 
-    async fn read_all_redirects(&self) -> Result<RedirectObjectList, DbServiceError> {
-        let redirects = sqlx::query_as::<_, RedirectObject>("SELECT alias, url FROM redirects;")
+    async fn read_all_redirects(&self) -> Result<RedirectListDTO, DbServiceError> {
+        let redirects = sqlx::query_as::<_, RedirectDTO>("SELECT alias, url FROM redirects;")
             .fetch_all(&self.db)
             .await
             .map_err(DbServiceError::from)?;
-        Ok(RedirectObjectList { redirects })
+        Ok(RedirectListDTO { redirects })
     }
 
     async fn delete_redirect(&self, alias: &str) -> Result<(), DbServiceError> {
@@ -55,7 +55,7 @@ impl RedirectRepo for SqliteService {
     async fn update_redirect(
         &self,
         alias: &str,
-        redirect: &UpdateUrlObject,
+        redirect: &UpdateUrlDTO,
     ) -> Result<(), DbServiceError> {
         let result = sqlx::query("UPDATE redirects SET url = $1 WHERE alias = $2")
             .bind(&redirect.url)

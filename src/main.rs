@@ -38,8 +38,9 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
     };
 
     let app = Router::new()
-        .merge(redirect_controller::router(app_state))
-        .route("/healthcheck", get(|| async { StatusCode::OK }));
+        .merge(redirect_controller::router())
+        .route("/healthcheck", get(|| async { StatusCode::OK }))
+        .with_state(app_state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 6789));
     let listener = tokio::net::TcpListener::bind(&addr).await?;
