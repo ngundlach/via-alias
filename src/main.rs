@@ -4,10 +4,11 @@ mod model;
 use std::{env, error::Error, net::SocketAddr, sync::Arc};
 
 use axum::{Router, http::StatusCode, routing::get};
-use controller::redirect_controller;
 use data::{RedirectRepo, SqliteService};
 use sqlx::migrate::MigrateDatabase;
 use tokio::signal;
+
+use crate::controller::redirect;
 
 #[derive(Clone)]
 struct AppState {
@@ -38,7 +39,7 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
     };
 
     let app = Router::new()
-        .merge(redirect_controller::router())
+        .merge(redirect::router())
         .route("/healthcheck", get(|| async { StatusCode::OK }))
         .with_state(app_state);
 
