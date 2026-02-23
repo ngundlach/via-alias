@@ -8,7 +8,7 @@ impl<'a> PayloadValidator<'a> {
     const ERR_ALPHANUMERIC: &'static str = "allowed characters are alphanumeric and hyphens";
     const ERR_MAX_LENGTH: &'static str = "max length is";
     const ERR_URL_SCHEMA: &'static str =
-        "has to start with 'http://' or 'https://' and does not contain any whitespaces";
+        "has to start with 'http://' or 'https://' and can not contain any whitespaces";
 
     pub fn new(value: &'a str) -> Self {
         PayloadValidator {
