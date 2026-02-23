@@ -3,7 +3,7 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Redirect},
-    routing::{get, patch, post},
+    routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
 
@@ -24,10 +24,14 @@ impl IntoResponse for ValidationErrorResponse {
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/{alias}", get(get_redirect_handler))
-        .route("/", post(create_redirect_handler))
-        .route("/all", get(get_all_redirects_handler))
-        .route("/{alias}", axum::routing::delete(delete_redirect_handler))
-        .route("/{alias}", patch(update_redirect_handler))
+        .route(
+            "/api/redirects",
+            post(create_redirect_handler).get(get_all_redirects_handler),
+        )
+        .route(
+            "/api/redirects/{alias}",
+            delete(delete_redirect_handler).patch(update_redirect_handler),
+        )
 }
 
 async fn delete_redirect_handler(
