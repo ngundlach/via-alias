@@ -2,9 +2,12 @@ use async_trait::async_trait;
 pub use error::DbServiceError;
 
 pub use crate::data::sqlite_service::SqliteService;
+pub use crate::data::validator::PayloadValidator;
 use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
 mod error;
 mod sqlite_service;
+mod validator;
+
 #[async_trait]
 pub trait RedirectRepo: Send + Sync + 'static {
     async fn read_redirect_by_alias(&self, alias: &str) -> Result<RedirectDTO, DbServiceError>;

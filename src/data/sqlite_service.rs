@@ -2,7 +2,10 @@ use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 
 use super::{RedirectRepo, error::DbServiceError};
-use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
+use crate::{
+    data::PayloadValidator,
+    model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO},
+};
 #[derive(Clone)]
 pub struct SqliteService {
     db: Pool<Sqlite>,
@@ -10,6 +13,27 @@ pub struct SqliteService {
 impl SqliteService {
     pub fn new(dbpool: Pool<Sqlite>) -> Self {
         SqliteService { db: dbpool }
+    }
+}
+impl SqliteService {
+    fn validate_alias(alias: &str) -> Result<(), DbServiceError> {
+        PayloadValidator::new(alias)
+            .not_empty()
+            .max_length(50)
+            .valid_characters()
+            .validate()
+            .map_err(|e| DbServiceError::PayloadValidationError("alias".to_string(), e))?;
+        Ok(())
+    }
+
+    fn validate_url(url: &str) -> Result<(), DbServiceError> {
+        PayloadValidator::new(url)
+            .not_empty()
+            .max_length(2048)
+            .has_url_schema()
+            .validate()
+            .map_err(|e| DbServiceError::PayloadValidationError("url".to_string(), e))?;
+        Ok(())
     }
 }
 #[async_trait]
@@ -23,6 +47,9 @@ impl RedirectRepo for SqliteService {
     }
 
     async fn create_redirect(&self, redirect: &RedirectDTO) -> Result<(), DbServiceError> {
+        SqliteService::validate_alias(&redirect.alias)?;
+        SqliteService::validate_url(&redirect.url)?;
+
         sqlx::query("INSERT INTO redirects (alias, url) VALUES ($1, $2);")
             .bind(&redirect.alias)
             .bind(&redirect.url)
@@ -57,6 +84,7 @@ impl RedirectRepo for SqliteService {
         alias: &str,
         redirect: &UpdateUrlDTO,
     ) -> Result<(), DbServiceError> {
+        SqliteService::validate_url(&redirect.url)?;
         let result = sqlx::query("UPDATE redirects SET url = $1 WHERE alias = $2")
             .bind(&redirect.url)
             .bind(alias)
@@ -103,7 +131,7 @@ mod tests {
         ];
 
         for dto in &dtos {
-            insert_into_test_db(dto.to_owned(), &pool).await;
+            insert_into_test_db(dto.to_owned(), pool).await;
         }
         dtos
     }
@@ -167,6 +195,25 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_create_redirect_validation_alias_fails() {
+        let pool = setup_test_db().await;
+        let service = SqliteService::new(pool.clone());
+
+        _ = seed_test_db(&pool).await;
+
+        let redirect = RedirectDTO {
+            alias: "".to_owned(),
+            url: "https://www.somedomain.de".to_owned(),
+        };
+        let result = service.create_redirect(&redirect).await;
+        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            Err(DbServiceError::PayloadValidationError(_, _))
+        ));
+    }
+
+    #[tokio::test]
     async fn test_update_redirect_success() {
         let pool = setup_test_db().await;
         let service = SqliteService::new(pool.clone());
@@ -199,6 +246,23 @@ mod tests {
         let notfound = read_from_test_db("somewrongalias", &pool).await;
         assert!(notfound.is_err());
         assert!(matches!(result, Err(DbServiceError::NotFoundError)));
+    }
+
+    #[tokio::test]
+    async fn test_update_redirect_validation_fails() {
+        let pool = setup_test_db().await;
+        let service = SqliteService::new(pool.clone());
+
+        seed_test_db(&pool).await;
+        let update_dto = UpdateUrlDTO {
+            url: "https://some otherurl.com".to_string(),
+        };
+        let result = service.update_redirect("somealias", &update_dto).await;
+        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            Err(DbServiceError::PayloadValidationError(_, _))
+        ));
     }
 
     #[tokio::test]

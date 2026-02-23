@@ -5,9 +5,21 @@ use axum::{
     response::{IntoResponse, Redirect},
     routing::{get, patch, post},
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{AppState, model::RedirectDTO};
 use crate::{data::DbServiceError, model::UpdateUrlDTO};
+
+#[derive(Serialize, Deserialize)]
+struct ValidationErrorResponse {
+    on_item: String,
+    errors: Vec<String>,
+}
+impl IntoResponse for ValidationErrorResponse {
+    fn into_response(self) -> axum::response::Response {
+        (StatusCode::BAD_REQUEST, Json(self)).into_response()
+    }
+}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -43,6 +55,11 @@ async fn create_redirect_handler(
     let query = db.create_redirect(&payload).await;
     match query {
         Ok(_) => (StatusCode::CREATED, Json(payload)).into_response(),
+        Err(DbServiceError::PayloadValidationError(s, e)) => ValidationErrorResponse {
+            on_item: s,
+            errors: e,
+        }
+        .into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
@@ -74,6 +91,11 @@ async fn update_redirect_handler(
         )
             .into_response(),
         Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND.into_response(),
+        Err(DbServiceError::PayloadValidationError(s, e)) => ValidationErrorResponse {
+            on_item: s,
+            errors: e,
+        }
+        .into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }

@@ -4,12 +4,21 @@ use std::fmt;
 pub enum DbServiceError {
     NotFoundError,
     DatabaseError(String),
+    PayloadValidationError(String, Vec<String>),
 }
 impl fmt::Display for DbServiceError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             DbServiceError::NotFoundError => write!(f, "Resource not found"),
             DbServiceError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
+            DbServiceError::PayloadValidationError(s, items) => {
+                let formatted_vec = items
+                    .iter()
+                    .map(|e| format!("[{}]", e))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "Validation Error in {s}: {formatted_vec}")
+            }
         }
     }
 }
