@@ -1,119 +1,82 @@
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 
-use super::{RedirectRepo, error::DbServiceError};
 use crate::{
-    data::PayloadValidator,
-    model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO},
+    data::RedirectRepo,
+    model::{RedirectDTO, UpdateUrlDTO},
 };
-#[derive(Clone)]
-pub struct SqliteService {
+
+pub struct RedirectRepoSqliteImpl {
     db: Pool<Sqlite>,
 }
-impl SqliteService {
-    pub fn new(dbpool: Pool<Sqlite>) -> Self {
-        SqliteService { db: dbpool }
-    }
-}
-impl SqliteService {
-    fn validate_alias(alias: &str) -> Result<(), DbServiceError> {
-        PayloadValidator::new(alias)
-            .not_empty()
-            .max_length(50)
-            .valid_characters()
-            .validate()
-            .map_err(|e| DbServiceError::PayloadValidationError("alias".to_string(), e))?;
-        Ok(())
-    }
 
-    fn validate_url(url: &str) -> Result<(), DbServiceError> {
-        PayloadValidator::new(url)
-            .not_empty()
-            .max_length(2048)
-            .has_url_schema()
-            .validate()
-            .map_err(|e| DbServiceError::PayloadValidationError("url".to_string(), e))?;
-        Ok(())
+impl RedirectRepoSqliteImpl {
+    pub fn new(db: Pool<Sqlite>) -> Self {
+        RedirectRepoSqliteImpl { db }
     }
 }
+
 #[async_trait]
-impl RedirectRepo for SqliteService {
-    async fn read_redirect_by_alias(&self, alias: &str) -> Result<RedirectDTO, DbServiceError> {
+impl RedirectRepo for RedirectRepoSqliteImpl {
+    async fn read_redirect_by_alias(&self, alias: &str) -> Result<RedirectDTO, sqlx::Error> {
         sqlx::query_as::<_, RedirectDTO>("SELECT alias, url FROM redirects WHERE alias = $1;")
             .bind(alias)
             .fetch_one(&self.db)
             .await
-            .map_err(DbServiceError::from)
     }
 
-    async fn create_redirect(&self, redirect: &RedirectDTO) -> Result<(), DbServiceError> {
-        SqliteService::validate_alias(&redirect.alias)?;
-        SqliteService::validate_url(&redirect.url)?;
-
+    async fn create_redirect(&self, redirect: &RedirectDTO) -> Result<(), sqlx::Error> {
         sqlx::query("INSERT INTO redirects (alias, url) VALUES ($1, $2);")
             .bind(&redirect.alias)
             .bind(&redirect.url)
             .execute(&self.db)
-            .await
-            .map_err(DbServiceError::from)?; // Explicitly call from
+            .await?;
         Ok(())
     }
 
-    async fn read_all_redirects(&self) -> Result<RedirectListDTO, DbServiceError> {
+    async fn read_all_redirects(&self) -> Result<Vec<RedirectDTO>, sqlx::Error> {
         let redirects = sqlx::query_as::<_, RedirectDTO>("SELECT alias, url FROM redirects;")
             .fetch_all(&self.db)
-            .await
-            .map_err(DbServiceError::from)?;
-        Ok(RedirectListDTO { redirects })
+            .await?;
+        Ok(redirects)
     }
 
-    async fn delete_redirect(&self, alias: &str) -> Result<(), DbServiceError> {
+    async fn delete_redirect_by_alias(&self, alias: &str) -> Result<u64, sqlx::Error> {
         let result = sqlx::query("DELETE FROM redirects WHERE alias = $1;")
             .bind(alias)
             .execute(&self.db)
-            .await
-            .map_err(DbServiceError::from)?;
-        if result.rows_affected() == 0 {
-            return Err(DbServiceError::NotFoundError);
-        }
-        Ok(())
+            .await?;
+        Ok(result.rows_affected())
     }
 
-    async fn update_redirect(
+    async fn update_redirect_by_alias(
         &self,
         alias: &str,
         redirect: &UpdateUrlDTO,
-    ) -> Result<(), DbServiceError> {
-        SqliteService::validate_url(&redirect.url)?;
+    ) -> Result<u64, sqlx::Error> {
         let result = sqlx::query("UPDATE redirects SET url = $1 WHERE alias = $2")
             .bind(&redirect.url)
             .bind(alias)
             .execute(&self.db)
-            .await
-            .map_err(DbServiceError::from)?;
-        if result.rows_affected() == 0 {
-            return Err(DbServiceError::NotFoundError);
-        }
-
-        Ok(())
+            .await?;
+        Ok(result.rows_affected())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::data::DbServiceError;
-    use crate::data::RedirectRepo;
-    use crate::data::SqliteService;
-    use crate::model::RedirectDTO;
-    use crate::model::UpdateUrlDTO;
-    use sqlx::sqlite::SqlitePool;
+    use sqlx::SqlitePool;
+
+    use crate::{
+        data::{RedirectRepo, RedirectRepoSqliteImpl},
+        model::{RedirectDTO, UpdateUrlDTO},
+    };
 
     async fn setup_test_db() -> SqlitePool {
         let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
         sqlx::migrate!("./migrations").run(&pool).await.unwrap();
         pool
     }
-
     async fn seed_test_db(pool: &SqlitePool) -> Vec<RedirectDTO> {
         let dtos = vec![
             RedirectDTO {
@@ -161,16 +124,15 @@ mod tests {
     #[tokio::test]
     async fn test_create_redirect_success() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
         let dto = RedirectDTO {
             alias: "somealias".to_string(),
             url: "https://someurl.com".to_string(),
         };
 
-        let result = service.create_redirect(&dto).await;
+        let result = repo.create_redirect(&dto).await;
         assert!(result.is_ok());
-
         let fetched = read_from_test_db(&dto.alias, &pool).await.unwrap();
         assert_eq!(fetched.alias, "somealias");
 
@@ -180,7 +142,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_redirect_duplicate_alias_fails() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
         let dtos = seed_test_db(&pool).await;
 
@@ -189,41 +151,22 @@ mod tests {
             url: dtos[0].url.clone(),
         };
 
-        let result = service.create_redirect(&duplicate).await;
+        let result = repo.create_redirect(&duplicate).await;
         assert!(result.is_err());
-        assert!(matches!(result, Err(DbServiceError::DatabaseError(_))));
-    }
-
-    #[tokio::test]
-    async fn test_create_redirect_validation_alias_fails() {
-        let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
-
-        _ = seed_test_db(&pool).await;
-
-        let redirect = RedirectDTO {
-            alias: "".to_owned(),
-            url: "https://www.somedomain.de".to_owned(),
-        };
-        let result = service.create_redirect(&redirect).await;
-        assert!(result.is_err());
-        assert!(matches!(
-            result,
-            Err(DbServiceError::PayloadValidationError(_, _))
-        ));
+        assert!(matches!(result, Err(sqlx::Error::Database(_))));
     }
 
     #[tokio::test]
     async fn test_update_redirect_success() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
         let alias_name = "somealias";
         seed_test_db(&pool).await;
         let update_dto = UpdateUrlDTO {
             url: "https://someotherurl.com".to_string(),
         };
-        let result = service.update_redirect(alias_name, &update_dto).await;
+        let result = repo.update_redirect_by_alias(alias_name, &update_dto).await;
         assert!(result.is_ok());
 
         let updated = read_from_test_db(alias_name, &pool).await.unwrap();
@@ -233,45 +176,30 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_update_wrong_redirect_fails() {
+    async fn test_update_wrong_redirect_leads_to_no_updates() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
         seed_test_db(&pool).await;
         let update_dto = UpdateUrlDTO {
             url: "https://someotherurl.com".to_string(),
         };
-        let result = service.update_redirect("somewrongalias", &update_dto).await;
-        assert!(result.is_err());
+        let result = repo
+            .update_redirect_by_alias("somewrongalias", &update_dto)
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
         let notfound = read_from_test_db("somewrongalias", &pool).await;
         assert!(notfound.is_err());
-        assert!(matches!(result, Err(DbServiceError::NotFoundError)));
-    }
-
-    #[tokio::test]
-    async fn test_update_redirect_validation_fails() {
-        let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
-
-        seed_test_db(&pool).await;
-        let update_dto = UpdateUrlDTO {
-            url: "https://some otherurl.com".to_string(),
-        };
-        let result = service.update_redirect("somealias", &update_dto).await;
-        assert!(result.is_err());
-        assert!(matches!(
-            result,
-            Err(DbServiceError::PayloadValidationError(_, _))
-        ));
     }
 
     #[tokio::test]
     async fn test_read_redirect_by_alias_success() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
         seed_test_db(&pool).await;
-        let result = service.read_redirect_by_alias("somealias").await;
+        let result = repo.read_redirect_by_alias("somealias").await;
 
         assert!(result.is_ok());
         let result_values = result.unwrap();
@@ -282,56 +210,57 @@ mod tests {
     #[tokio::test]
     async fn test_read_redirect_by_alias_not_found() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool);
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
-        let result = service.read_redirect_by_alias("somealias").await;
+        let result = repo.read_redirect_by_alias("somealias").await;
 
         assert!(result.is_err());
-        assert!(matches!(result, Err(DbServiceError::NotFoundError)));
+        assert!(matches!(result, Err(sqlx::Error::RowNotFound)));
     }
 
     #[tokio::test]
     async fn test_read_all_redirects_should_return_empty_list() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool);
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
-        let result = service.read_all_redirects().await;
+        let result = repo.read_all_redirects().await;
 
         assert!(result.is_ok());
         let result_list = result.unwrap();
-        assert!(result_list.redirects.is_empty())
+        assert!(result_list.is_empty())
     }
 
     #[tokio::test]
     async fn test_read_all_redirects_should_return_list() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
         let dtos = seed_test_db(&pool).await;
 
-        let result = service.read_all_redirects().await;
+        let result = repo.read_all_redirects().await;
 
         assert!(result.is_ok());
 
         let result_list = result.unwrap();
 
-        assert_eq!(result_list.redirects.len(), 3);
+        assert_eq!(result_list.len(), 3);
 
         for result_item in dtos {
-            assert!(result_list.redirects.contains(&result_item));
+            assert!(result_list.contains(&result_item));
         }
     }
 
     #[tokio::test]
     async fn test_delete_redirect_success() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
         let dtos = seed_test_db(&pool).await;
 
-        let result = service.delete_redirect(&dtos[0].alias).await;
+        let result = repo.delete_redirect_by_alias(&dtos[0].alias).await;
 
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1);
         let updated_list = read_all_from_test_db(&pool).await;
         assert_eq!(updated_list.len(), 2);
         assert!(updated_list.contains(&dtos[1]));
@@ -340,16 +269,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_delete_redirect_failed() {
+    async fn test_delete_unknown_redirect_leads_to_no_deletion() {
         let pool = setup_test_db().await;
-        let service = SqliteService::new(pool.clone());
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
         let dtos = seed_test_db(&pool).await;
 
-        let result = service.delete_redirect("invalidalias").await;
+        let result = repo.delete_redirect_by_alias("invalidalias").await;
 
-        assert!(result.is_err());
-        assert!(matches!(result, Err(DbServiceError::NotFoundError)));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
         let updated_list = read_all_from_test_db(&pool).await;
         assert_eq!(updated_list.len(), 3);
         for dto in &dtos {

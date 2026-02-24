@@ -1,18 +1,22 @@
 mod controller;
 mod data;
 mod model;
+mod service;
 use std::{env, error::Error, net::SocketAddr, sync::Arc};
 
 use axum::{Router, http::StatusCode, routing::get};
-use data::{RedirectRepo, SqliteService};
 use sqlx::migrate::MigrateDatabase;
 use tokio::signal;
 
-use crate::controller::redirect;
+use crate::{
+    controller::redirect,
+    data::RedirectRepoSqliteImpl,
+    service::{RedirectService, RedirectServiceImpl},
+};
 
 #[derive(Clone)]
 struct AppState {
-    db: Arc<dyn RedirectRepo + Send + Sync>,
+    redirect_service: Arc<dyn RedirectService + Send + Sync>,
 }
 #[tokio::main]
 async fn main() {
@@ -32,10 +36,11 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
-    let dbservice = SqliteService::new(pool.clone());
+    let redirect_repo = RedirectRepoSqliteImpl::new(pool.clone());
+    let redirect_service = RedirectServiceImpl::new(redirect_repo);
 
     let app_state = AppState {
-        db: Arc::new(dbservice),
+        redirect_service: Arc::new(redirect_service),
     };
 
     let app = Router::new()
