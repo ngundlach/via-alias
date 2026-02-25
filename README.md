@@ -8,16 +8,6 @@ Via-Alias is very early stage and under active development. **Expect breaking ch
 
 ---
 
-## Deployment
-
-You can use the provided Dockerfile to build a containerimage:
-
-```shell
-docker build -t via-alias .
-```
-
----
-
 ## Via-Alias API Documentation
 
 ---
@@ -175,3 +165,33 @@ GET /healthcheck
 ```
 
 **Response `200 OK`**
+
+---
+
+## Building with Docker
+
+Building the containerimage with the provided Dockerfile will create an alpine-based image. The api is exposed on port `6789` and the persistent database is stored at `/via_data/via-alias/via-alias.db`.
+
+Clone the repository:
+
+```bash
+git clone https://github.com/ngundlach/via-alias.git via-alias
+cd via-alias
+```
+
+Build the image:
+
+```bash
+docker build -t via-alias .
+```
+
+Run the container:
+
+```bash
+docker run \
+  --volume /host/path:/via_data/via-alias \
+  --publish 6789:6789 \
+  via-alias
+```
+
+This will run a container based on the newly created image and create a volume named `via_alias` for persistence mounted to the required directory.
