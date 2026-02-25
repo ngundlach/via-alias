@@ -35,4 +35,6 @@ USER appuser
 
 EXPOSE 6789
 
+VOLUME ${DATA_DIR}
+
 CMD ["./app"]
