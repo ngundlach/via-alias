@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    pwhash TEXT NOT NULL,
+    is_admin INTEGER DEFAULT 0
+);
