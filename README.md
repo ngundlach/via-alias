@@ -2,15 +2,21 @@
 
 [![build](https://github.com/ngundlach/via-alias/actions/workflows/ci.yml/badge.svg)](https://github.com/ngundlach/via-alias/actions/workflows/ci.yml)
 
-**Via-Alias** is a self-hosted URL shortener built with Rust. It allows you to create short, memorable aliases for long URLs and manage them through a REST API. Built with Axum and SQLite.
+**Via-Alias** is a self-hosted URL shortener built with Rust. It allows you to
+create short, memorable aliases for long URLs and manage them through a REST
+API. Built with Axum and SQLite.
 
-Via-Alias is very early stage and under active development. **Expect breaking changes frequently!**
+Via-Alias is very early stage and under active development.
+**Expect breaking changes frequently!**
+
+## Table of Contents
+
+- [API Documentation](#api-documentation)
+- [Building with Docker](#building-with-docker)
 
 ---
 
-## Via-Alias API Documentation
-
----
+## API Documentation
 
 ## Redirects
 
@@ -170,7 +176,9 @@ GET /healthcheck
 
 ## Building with Docker
 
-Building the containerimage with the provided Dockerfile will create an alpine-based image. The api is exposed on port `6789` and the persistent database is stored at `/via_data/via-alias/via-alias.db`.
+Building the containerimage with the provided Dockerfile will create an
+alpine-based image. The api is exposed on port `6789` and the persistent
+database is stored at `/via_data/via-alias/via-alias.db`.
 
 Clone the repository:
 
@@ -189,9 +197,11 @@ Run the container:
 
 ```bash
 docker run \
-  --volume /host/path:/via_data/via-alias \
+  --volume via-alias:/via_data/via-alias \
   --publish 6789:6789 \
   via-alias
 ```
 
-This will run a container based on the newly created image and create a volume named `via_alias` for persistence mounted to the required directory.
+This will run a container based on the newly created image and create a volume
+named `via_alias` for persistence mounted to the required directory. The port is
+mapped to `6789`.
