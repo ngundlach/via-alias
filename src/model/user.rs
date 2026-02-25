@@ -14,3 +14,9 @@ pub struct UserDTO {
     pub name: String,
     pub is_admin: bool,
 }
+
+#[derive(Default, Deserialize, Serialize, Debug)]
+pub struct UserCredentialsDTO {
+    pub name: String,
+    pub pw: String,
+}
