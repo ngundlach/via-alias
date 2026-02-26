@@ -1,23 +1,68 @@
 mod controller;
 mod data;
+mod middleware;
 mod model;
 mod service;
-use std::{env, error::Error, net::SocketAddr, sync::Arc};
-
 use axum::{Router, http::StatusCode, routing::get};
-use sqlx::migrate::MigrateDatabase;
+use sqlx::{Pool, Sqlite, migrate::MigrateDatabase};
+use std::{env, error::Error, fs::read_to_string, net::SocketAddr, sync::Arc};
 use tokio::signal;
 
 use crate::{
-    controller::redirect,
-    data::RedirectRepoSqliteImpl,
-    service::{RedirectService, RedirectServiceImpl},
+    controller::{login, redirect},
+    data::{RedirectRepoSqliteImpl, UserRepoSqliteImpl},
+    service::{
+        LoginService, LoginServiceImpl, RedirectService, RedirectServiceImpl, UserService,
+        UserServiceImpl,
+    },
 };
 
 #[derive(Clone)]
 struct AppState {
+    app_config: AppConfig,
     redirect_service: Arc<dyn RedirectService + Send + Sync>,
+    login_service: Arc<dyn LoginService + Send + Sync>,
+    user_service: Arc<dyn UserService + Send + Sync>,
 }
+#[derive(Clone)]
+struct AppConfig {
+    jwt_secret: String,
+    port: u16,
+}
+
+fn create_app_contenxt(pool: &Pool<Sqlite>) -> Result<AppState, Box<dyn Error>> {
+    let app_config = generate_app_config()?;
+    let redirect_repo = Arc::new(RedirectRepoSqliteImpl::new(pool.clone()));
+    let user_repo = Arc::new(UserRepoSqliteImpl::new(pool.clone()));
+    let redirect_service = RedirectServiceImpl::new(redirect_repo);
+    let user_service = UserServiceImpl::new(user_repo.clone());
+    let login_service = LoginServiceImpl::new(user_repo);
+    let app_state = AppState {
+        redirect_service: Arc::new(redirect_service),
+        login_service: Arc::new(login_service),
+        user_service: Arc::new(user_service),
+        app_config,
+    };
+    Ok(app_state)
+}
+
+fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
+    let jwt_secret = read_secret("VIA_ALIAS_JWT_SECRET")
+        .or_else(|_| env::var("VIA_ALIAS_JWT_SECRET"))
+        .map_err(|_| "VIA_ALIAS_JWT_SECRET is not set")?;
+
+    let port: u16 = env::var("VIA_ALIAS_PORT")
+        .unwrap_or_else(|_| "6789".to_owned())
+        .parse()
+        .map_err(|_| "VIA_ALIAS_PORT is not a valid port number")?;
+
+    Ok(AppConfig { jwt_secret, port })
+}
+
+fn read_secret(name: &str) -> Result<String, std::io::Error> {
+    read_to_string(format!("/run/secrets/{}", name)).map(|s| s.trim().to_string())
+}
+
 #[tokio::main]
 async fn main() {
     if let Err(e) = run_app().await {
@@ -36,20 +81,20 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
-    let redirect_repo = RedirectRepoSqliteImpl::new(pool.clone());
-    let redirect_service = RedirectServiceImpl::new(redirect_repo);
+    let app_state = create_app_contenxt(&pool)?;
+    app_state.user_service.create_admin_first_start().await?;
 
-    let app_state = AppState {
-        redirect_service: Arc::new(redirect_service),
-    };
-
+    let port = app_state.app_config.port;
     let app = Router::new()
         .merge(redirect::router())
+        .merge(login::router())
         .route("/healthcheck", get(|| async { StatusCode::OK }))
         .with_state(app_state);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 6789));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = tokio::net::TcpListener::bind(&addr).await?;
+    println!("Listening on port {}...", port);
+
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;
@@ -59,6 +104,7 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
     println!("Terminating...");
     Ok(())
 }
+
 async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c()

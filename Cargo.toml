@@ -11,6 +11,8 @@ serde = { version = "1.0.218", features = ["derive"] }
 sqlx = { version = "0.8.6", features = ["macros", "runtime-tokio", "sqlite", "migrate"] }
 tokio = { version = "1.49.0", features = ["signal", "rt-multi-thread"] }
 uuid = { version = "1.21.0", features = ["v4"] }
+base64 = "0.22.1"
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 
 [profile.release]
 opt-level = "s"

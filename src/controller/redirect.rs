@@ -35,30 +35,28 @@ pub fn router() -> Router<AppState> {
 }
 
 async fn delete_redirect_handler(
-    State(AppState { redirect_service }): State<AppState>,
+    State(app_state): State<AppState>,
     Path(alias): Path<String>,
 ) -> impl IntoResponse {
-    let query = redirect_service.delete_redirect(&alias).await;
+    let query = app_state.redirect_service.delete_redirect(&alias).await;
     match query {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
-async fn get_all_redirects_handler(
-    State(AppState { redirect_service }): State<AppState>,
-) -> impl IntoResponse {
-    let redirects = redirect_service.get_all_redirects().await;
+async fn get_all_redirects_handler(State(app_state): State<AppState>) -> impl IntoResponse {
+    let redirects = app_state.redirect_service.get_all_redirects().await;
     match redirects {
         Ok(found) => Json(found).into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 async fn create_redirect_handler(
-    State(AppState { redirect_service }): State<AppState>,
+    State(app_state): State<AppState>,
     Json(payload): Json<RedirectDTO>,
 ) -> impl IntoResponse {
-    let query = redirect_service.create_redirect(&payload).await;
+    let query = app_state.redirect_service.create_redirect(&payload).await;
     match query {
         Ok(_) => (StatusCode::CREATED, Json(payload)).into_response(),
         Err(DbServiceError::PayloadValidationError(s, e)) => ValidationErrorResponse {
@@ -71,10 +69,10 @@ async fn create_redirect_handler(
 }
 
 async fn get_redirect_handler(
-    State(AppState { redirect_service }): State<AppState>,
+    State(app_state): State<AppState>,
     Path(alias): Path<String>,
 ) -> impl IntoResponse {
-    let redirect = redirect_service.get_redirect(&alias).await;
+    let redirect = app_state.redirect_service.get_redirect(&alias).await;
     match redirect {
         Ok(r) => Redirect::temporary(&r.url).into_response(),
         Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND.into_response(),
@@ -82,13 +80,16 @@ async fn get_redirect_handler(
     }
 }
 async fn update_redirect_handler(
-    State(AppState { redirect_service }): State<AppState>,
+    State(app_state): State<AppState>,
     Path(alias): Path<String>,
     Json(payload): Json<UpdateUrlDTO>,
 ) -> impl IntoResponse {
-    let result = redirect_service.update_redirect(&alias, &payload).await;
+    let result = app_state
+        .redirect_service
+        .update_redirect(&alias, &payload)
+        .await;
     match result {
-        Ok(_) => (
+        Ok(()) => (
             StatusCode::OK,
             Json(RedirectDTO {
                 alias,

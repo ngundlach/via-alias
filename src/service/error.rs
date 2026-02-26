@@ -5,7 +5,10 @@ pub enum DbServiceError {
     NotFoundError,
     DatabaseError(String),
     PayloadValidationError(String, Vec<String>),
+    WrongCredentials(String),
+    LoginError(String),
 }
+
 impl fmt::Display for DbServiceError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -19,6 +22,8 @@ impl fmt::Display for DbServiceError {
                     .join(", ");
                 write!(f, "Validation Error in {s}: {formatted_vec}")
             }
+            DbServiceError::WrongCredentials(msg) => write!(f, "User Credentials error: {}", msg),
+            DbServiceError::LoginError(msg) => write!(f, "Error during login{}", msg),
         }
     }
 }

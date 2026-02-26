@@ -12,10 +12,8 @@ pub struct RedirectServiceImpl {
     repo: Arc<dyn RedirectRepo + Send + Sync>,
 }
 impl RedirectServiceImpl {
-    pub fn new(repo: impl RedirectRepo) -> Self {
-        RedirectServiceImpl {
-            repo: Arc::new(repo),
-        }
+    pub fn new(repo: Arc<dyn RedirectRepo + Send + Sync>) -> Self {
+        RedirectServiceImpl { repo }
     }
     fn validate_alias(alias: &str) -> Result<(), DbServiceError> {
         PayloadValidator::new(alias)
