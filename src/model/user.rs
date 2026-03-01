@@ -8,7 +8,7 @@ pub struct User {
     pub is_admin: bool,
 }
 
-#[derive(Default, Deserialize, Serialize, sqlx::FromRow, Debug, Clone)]
+#[derive(Default, Deserialize, Serialize, Debug)]
 pub struct UserDTO {
     pub id: String,
     pub name: String,
@@ -29,7 +29,7 @@ pub struct UserTokenDTO {
     pub expires_in: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct UserClaimsDTO {
     pub user_id: String,
     pub is_admin: bool,

@@ -1,7 +1,5 @@
-mod redirect_dto;
+mod redirect;
 mod user;
 
-pub use self::redirect_dto::RedirectDTO;
-pub use self::redirect_dto::RedirectListDTO;
-pub use self::redirect_dto::UpdateUrlDTO;
-pub use self::user::*;
+pub(crate) use self::redirect::*;
+pub(crate) use self::user::*;
