@@ -3,7 +3,7 @@ use sqlx::{Pool, Sqlite};
 
 use crate::{
     data::RedirectRepo,
-    model::{RedirectDTO, UpdateUrlDTO},
+    model::{RedirectCreationDTO, RedirectDTO, UpdateUrlDTO},
 };
 
 pub struct RedirectRepoSqliteImpl {
@@ -25,10 +25,11 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
             .await
     }
 
-    async fn create_redirect(&self, redirect: &RedirectDTO) -> Result<(), sqlx::Error> {
-        sqlx::query("INSERT INTO redirects (alias, url) VALUES ($1, $2);")
-            .bind(&redirect.alias)
-            .bind(&redirect.url)
+    async fn create_redirect(&self, redirect: &RedirectCreationDTO) -> Result<(), sqlx::Error> {
+        sqlx::query("INSERT INTO redirects (alias, url, owner) VALUES ($1, $2, $3);")
+            .bind(&redirect.redirect.alias)
+            .bind(&redirect.redirect.url)
+            .bind(&redirect.owner)
             .execute(&self.db)
             .await?;
         Ok(())
@@ -38,6 +39,18 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
         let redirects = sqlx::query_as::<_, RedirectDTO>("SELECT alias, url FROM redirects;")
             .fetch_all(&self.db)
             .await?;
+        Ok(redirects)
+    }
+
+    async fn read_all_redirects_by_user_id(
+        &self,
+        user_id: &String,
+    ) -> Result<Vec<RedirectDTO>, sqlx::Error> {
+        let redirects =
+            sqlx::query_as::<_, RedirectDTO>("SELECT alias, url FROM redirects WHERE owner = $1;")
+                .bind(&user_id)
+                .fetch_all(&self.db)
+                .await?;
         Ok(redirects)
     }
 
@@ -65,11 +78,11 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
 
 #[cfg(test)]
 mod tests {
-    use sqlx::SqlitePool;
+    use sqlx::{SqlitePool, pool};
 
     use crate::{
         data::{RedirectRepo, RedirectRepoSqliteImpl},
-        model::{RedirectDTO, UpdateUrlDTO},
+        model::{RedirectCreationDTO, RedirectDTO, UpdateUrlDTO, User},
     };
 
     async fn setup_test_db() -> SqlitePool {
@@ -77,26 +90,47 @@ mod tests {
         sqlx::migrate!("./migrations").run(&pool).await.unwrap();
         pool
     }
-    async fn seed_test_db(pool: &SqlitePool) -> Vec<RedirectDTO> {
+    fn get_test_user_data() -> User {
+        User {
+            id: "some_id_string".to_owned(),
+            is_admin: false,
+            name: "testuser".to_owned(),
+            pwhash: "not_a_pw_hash".to_owned(),
+        }
+    }
+    async fn seed_test_db(pool: &SqlitePool) -> (Vec<RedirectCreationDTO>, User) {
+        let owner = get_test_user_data();
+
+        insert_user_into_test_db(&owner, &pool).await;
+
         let dtos = vec![
-            RedirectDTO {
-                alias: "somealias".to_string(),
-                url: "https://someurl.com".to_string(),
+            RedirectCreationDTO {
+                redirect: RedirectDTO {
+                    alias: "somealias".to_string(),
+                    url: "https://someurl.com".to_string(),
+                },
+                owner: owner.id.clone(),
             },
-            RedirectDTO {
-                alias: "secondalias".to_string(),
-                url: "https://secondurl.com".to_string(),
+            RedirectCreationDTO {
+                redirect: RedirectDTO {
+                    alias: "secondalias".to_string(),
+                    url: "https://secondurl.com".to_string(),
+                },
+                owner: owner.id.clone(),
             },
-            RedirectDTO {
-                alias: "thirdalias".to_string(),
-                url: "https://thirdurl.com".to_string(),
+            RedirectCreationDTO {
+                redirect: RedirectDTO {
+                    alias: "thirdalias".to_string(),
+                    url: "https://thirdurl.com".to_string(),
+                },
+                owner: owner.id.clone(),
             },
         ];
 
         for dto in &dtos {
             insert_into_test_db(dto.to_owned(), pool).await;
         }
-        dtos
+        (dtos, owner)
     }
 
     async fn read_from_test_db(alias: &str, pool: &SqlitePool) -> Result<RedirectDTO, sqlx::Error> {
@@ -106,14 +140,26 @@ mod tests {
             .await
     }
 
-    async fn insert_into_test_db(dto: RedirectDTO, pool: &SqlitePool) {
-        sqlx::query("INSERT INTO redirects (alias, url) VALUES ($1, $2);")
-            .bind(dto.alias)
-            .bind(dto.url)
+    async fn insert_into_test_db(dto: &RedirectCreationDTO, pool: &SqlitePool) {
+        sqlx::query("INSERT INTO redirects (alias, url, owner) VALUES ($1, $2, $3);")
+            .bind(&dto.redirect.alias)
+            .bind(&dto.redirect.url)
+            .bind(&dto.owner)
             .execute(pool)
             .await
             .unwrap();
     }
+    async fn insert_user_into_test_db(user: &User, pool: &SqlitePool) {
+        sqlx::query("INSERT INTO users (id, name, pwhash, is_admin) VALUES ($1, $2, $3, $5);")
+            .bind(&user.id)
+            .bind(&user.name)
+            .bind(&user.pwhash)
+            .bind(user.is_admin)
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+
     async fn read_all_from_test_db(pool: &SqlitePool) -> Vec<RedirectDTO> {
         sqlx::query_as::<_, RedirectDTO>("SELECT alias, url FROM redirects;")
             .fetch_all(pool)
@@ -125,16 +171,20 @@ mod tests {
     async fn test_create_redirect_success() {
         let pool = setup_test_db().await;
         let repo = RedirectRepoSqliteImpl::new(pool.clone());
-
-        let dto = RedirectDTO {
-            alias: "somealias".to_string(),
-            url: "https://someurl.com".to_string(),
+        let (_, owner) = seed_test_db(&pool).await;
+        let dto = RedirectCreationDTO {
+            redirect: RedirectDTO {
+                alias: "somenewalias".to_string(),
+                url: "https://someurl.com".to_string(),
+            },
+            owner: owner.id,
         };
 
         let result = repo.create_redirect(&dto).await;
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
-        let fetched = read_from_test_db(&dto.alias, &pool).await.unwrap();
-        assert_eq!(fetched.alias, "somealias");
+        let fetched = read_from_test_db(&dto.redirect.alias, &pool).await.unwrap();
+        assert_eq!(fetched.alias, "somenewalias");
 
         assert_eq!(fetched.url, "https://someurl.com");
     }
@@ -144,11 +194,14 @@ mod tests {
         let pool = setup_test_db().await;
         let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
-        let dtos = seed_test_db(&pool).await;
+        let (dtos, _) = seed_test_db(&pool).await;
 
-        let duplicate = RedirectDTO {
-            alias: dtos[0].alias.clone(),
-            url: dtos[0].url.clone(),
+        let duplicate = RedirectCreationDTO {
+            redirect: RedirectDTO {
+                alias: dtos[0].redirect.alias.clone(),
+                url: dtos[0].redirect.url.clone(),
+            },
+            owner: dtos[0].owner.clone(),
         };
 
         let result = repo.create_redirect(&duplicate).await;
@@ -235,7 +288,7 @@ mod tests {
         let pool = setup_test_db().await;
         let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
-        let dtos = seed_test_db(&pool).await;
+        let (dtos, _) = seed_test_db(&pool).await;
 
         let result = repo.read_all_redirects().await;
 
@@ -246,8 +299,43 @@ mod tests {
         assert_eq!(result_list.len(), 3);
 
         for result_item in dtos {
-            assert!(result_list.contains(&result_item));
+            assert!(result_list.contains(&result_item.redirect));
         }
+    }
+
+    #[tokio::test]
+    async fn test_read_all_redirects_by_user_should_return_limited_list() {
+        let pool = setup_test_db().await;
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
+
+        let (seeded_list, _) = seed_test_db(&pool).await;
+
+        let new_user = User {
+            id: "new_id_string".to_owned(),
+            name: "new_test_user".to_owned(),
+            is_admin: false,
+            pwhash: "some_pw_hash_but_its_not_a_hash".to_owned(),
+        };
+
+        insert_user_into_test_db(&new_user, &pool).await;
+
+        let new_redirect = RedirectCreationDTO {
+            redirect: RedirectDTO {
+                alias: "the_newest_alias".to_owned(),
+                url: "http://url.de".to_owned(),
+            },
+            owner: new_user.id.clone(),
+        };
+        insert_into_test_db(&new_redirect, &pool).await;
+
+        let redirects_result = repo.read_all_redirects_by_user_id(&new_user.id).await;
+        assert!(redirects_result.is_ok());
+        let limited_redirect_list = redirects_result.unwrap();
+        assert!(!limited_redirect_list.is_empty());
+        assert_eq!(limited_redirect_list.len(), 1);
+        assert_eq!(limited_redirect_list[0], new_redirect.redirect);
+        let full_list = repo.read_all_redirects().await.unwrap();
+        assert_eq!(full_list.len(), seeded_list.len() + 1);
     }
 
     #[tokio::test]
@@ -255,17 +343,17 @@ mod tests {
         let pool = setup_test_db().await;
         let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
-        let dtos = seed_test_db(&pool).await;
+        let (dtos, _) = seed_test_db(&pool).await;
 
-        let result = repo.delete_redirect_by_alias(&dtos[0].alias).await;
+        let result = repo.delete_redirect_by_alias(&dtos[0].redirect.alias).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 1);
         let updated_list = read_all_from_test_db(&pool).await;
         assert_eq!(updated_list.len(), 2);
-        assert!(updated_list.contains(&dtos[1]));
-        assert!(updated_list.contains(&dtos[2]));
-        assert!(!updated_list.contains(&dtos[0]));
+        assert!(updated_list.contains(&dtos[1].redirect));
+        assert!(updated_list.contains(&dtos[2].redirect));
+        assert!(!updated_list.contains(&dtos[0].redirect));
     }
 
     #[tokio::test]
@@ -273,7 +361,7 @@ mod tests {
         let pool = setup_test_db().await;
         let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
-        let dtos = seed_test_db(&pool).await;
+        let (dtos, _) = seed_test_db(&pool).await;
 
         let result = repo.delete_redirect_by_alias("invalidalias").await;
 
@@ -282,7 +370,7 @@ mod tests {
         let updated_list = read_all_from_test_db(&pool).await;
         assert_eq!(updated_list.len(), 3);
         for dto in &dtos {
-            assert!(updated_list.contains(dto));
+            assert!(updated_list.contains(&dto.redirect));
         }
     }
 }

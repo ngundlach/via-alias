@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::model::{RedirectDTO, UpdateUrlDTO, User, UserDTO};
+use crate::model::{RedirectCreationDTO, RedirectDTO, UpdateUrlDTO, User, UserDTO};
 mod redirect_repo;
 mod user_repo;
 pub use crate::data::redirect_repo::RedirectRepoSqliteImpl;
@@ -9,8 +9,12 @@ pub use crate::data::user_repo::UserRepoSqliteImpl;
 #[async_trait]
 pub trait RedirectRepo: Send + Sync + 'static {
     async fn read_redirect_by_alias(&self, alias: &str) -> Result<RedirectDTO, sqlx::Error>;
-    async fn create_redirect(&self, redirect: &RedirectDTO) -> Result<(), sqlx::Error>;
+    async fn create_redirect(&self, redirect: &RedirectCreationDTO) -> Result<(), sqlx::Error>;
     async fn read_all_redirects(&self) -> Result<Vec<RedirectDTO>, sqlx::Error>;
+    async fn read_all_redirects_by_user_id(
+        &self,
+        user_id: &String,
+    ) -> Result<Vec<RedirectDTO>, sqlx::Error>;
     async fn delete_redirect_by_alias(&self, alias: &str) -> Result<u64, sqlx::Error>;
     async fn update_redirect_by_alias(
         &self,
