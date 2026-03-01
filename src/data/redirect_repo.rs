@@ -78,7 +78,7 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
 
 #[cfg(test)]
 mod tests {
-    use sqlx::{SqlitePool, pool};
+    use sqlx::SqlitePool;
 
     use crate::{
         data::{RedirectRepo, RedirectRepoSqliteImpl},
@@ -190,6 +190,23 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_create_redirect_with_unknown_user_fails() {
+        let pool = setup_test_db().await;
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
+        seed_test_db(&pool).await;
+        let dto = RedirectCreationDTO {
+            redirect: RedirectDTO {
+                alias: "somenewalias".to_string(),
+                url: "https://someurl.com".to_string(),
+            },
+            owner: "some_none_existant_user_id".to_owned(),
+        };
+
+        let result = repo.create_redirect(&dto).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
     async fn test_create_redirect_duplicate_alias_fails() {
         let pool = setup_test_db().await;
         let repo = RedirectRepoSqliteImpl::new(pool.clone());
@@ -220,6 +237,7 @@ mod tests {
             url: "https://someotherurl.com".to_string(),
         };
         let result = repo.update_redirect_by_alias(alias_name, &update_dto).await;
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
 
         let updated = read_from_test_db(alias_name, &pool).await.unwrap();
@@ -240,6 +258,7 @@ mod tests {
         let result = repo
             .update_redirect_by_alias("somewrongalias", &update_dto)
             .await;
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 0);
         let notfound = read_from_test_db("somewrongalias", &pool).await;
@@ -254,6 +273,7 @@ mod tests {
         seed_test_db(&pool).await;
         let result = repo.read_redirect_by_alias("somealias").await;
 
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
         let result_values = result.unwrap();
         assert_eq!(result_values.alias, "somealias");
@@ -278,6 +298,7 @@ mod tests {
 
         let result = repo.read_all_redirects().await;
 
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
         let result_list = result.unwrap();
         assert!(result_list.is_empty())
@@ -292,6 +313,7 @@ mod tests {
 
         let result = repo.read_all_redirects().await;
 
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
 
         let result_list = result.unwrap();
@@ -329,6 +351,7 @@ mod tests {
         insert_into_test_db(&new_redirect, &pool).await;
 
         let redirects_result = repo.read_all_redirects_by_user_id(&new_user.id).await;
+        dbg!(redirects_result.as_ref().err());
         assert!(redirects_result.is_ok());
         let limited_redirect_list = redirects_result.unwrap();
         assert!(!limited_redirect_list.is_empty());
@@ -346,7 +369,7 @@ mod tests {
         let (dtos, _) = seed_test_db(&pool).await;
 
         let result = repo.delete_redirect_by_alias(&dtos[0].redirect.alias).await;
-
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 1);
         let updated_list = read_all_from_test_db(&pool).await;
@@ -365,6 +388,7 @@ mod tests {
 
         let result = repo.delete_redirect_by_alias("invalidalias").await;
 
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 0);
         let updated_list = read_all_from_test_db(&pool).await;
