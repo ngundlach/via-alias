@@ -6,7 +6,7 @@ pub enum DbServiceError {
     DatabaseError(String),
     PayloadValidationError(String, Vec<String>),
     WrongCredentials(String),
-    LoginError(String),
+    AuthError(String),
 }
 
 impl fmt::Display for DbServiceError {
@@ -23,7 +23,7 @@ impl fmt::Display for DbServiceError {
                 write!(f, "Validation Error in {s}: {formatted_vec}")
             }
             DbServiceError::WrongCredentials(msg) => write!(f, "User Credentials error: {}", msg),
-            DbServiceError::LoginError(msg) => write!(f, "Error during login{}", msg),
+            DbServiceError::AuthError(msg) => write!(f, "Auth error: {}", msg),
         }
     }
 }
