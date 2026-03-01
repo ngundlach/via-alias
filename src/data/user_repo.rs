@@ -132,6 +132,7 @@ mod tests {
         };
 
         let result = repo.create_user(&user).await;
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
         let fetched = read_from_test_db(&user.id, &pool).await.unwrap();
         assert_eq!(user, fetched);
@@ -163,6 +164,7 @@ mod tests {
             is_admin: false,
         };
         let result = repo.update_user(&user_dto).await;
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
 
         let updated = read_from_test_db(&user_dto.id, &pool).await.unwrap();
@@ -180,6 +182,7 @@ mod tests {
         seed_test_db(&pool).await;
 
         let count = repo.count_user_with_is_admin().await;
+        dbg!(count.as_ref().err());
         assert!(count.is_ok());
         assert_eq!(count.unwrap(), 1);
     }
@@ -192,6 +195,7 @@ mod tests {
         let users = seed_test_db(&pool).await;
 
         let result = repo.read_user_by_name(&users[0].name).await;
+        dbg!(result.as_ref().err());
         assert!(result.is_ok());
         let expected = users[0].clone();
         assert_eq!(result.unwrap(), expected);
