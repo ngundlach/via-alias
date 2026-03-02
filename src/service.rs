@@ -3,6 +3,7 @@ mod login_service;
 mod redirect_service;
 mod user_service;
 mod validator;
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use async_trait::async_trait;
 
 use crate::JwtConfig;
@@ -47,11 +48,6 @@ pub trait UserService {
 
 #[async_trait]
 pub trait LoginService {
-    async fn check_user_credentials(
-        &self,
-        user: &UserCredentialsDTO,
-        user_from_db: &User,
-    ) -> Result<(), DbServiceError>;
     async fn get_user_data(&self, user: &UserCredentialsDTO) -> Result<User, DbServiceError>;
     async fn login_user(
         &self,

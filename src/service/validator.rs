@@ -1,3 +1,10 @@
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
+
+use crate::{
+    model::{User, UserCredentialsDTO},
+    service::DbServiceError,
+};
+
 pub struct PayloadValidator<'a> {
     value: &'a str,
     errors: Vec<String>,
@@ -61,6 +68,19 @@ impl<'a> PayloadValidator<'a> {
         }
         Ok(())
     }
+}
+
+pub(crate) fn check_user_credentials(
+    user: &UserCredentialsDTO,
+    user_data: &User,
+) -> Result<(), DbServiceError> {
+    let argon2 = Argon2::default();
+    let parsed_hash = PasswordHash::new(&user_data.pwhash)
+        .map_err(|e| DbServiceError::DatabaseError(e.to_string()))?;
+    argon2
+        .verify_password(user.pw.as_bytes(), &parsed_hash)
+        .map_err(|e| DbServiceError::WrongCredentials(e.to_string()))?;
+    Ok(())
 }
 
 #[cfg(test)]

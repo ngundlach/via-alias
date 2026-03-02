@@ -3,7 +3,6 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use async_trait::async_trait;
 use jsonwebtoken::{EncodingKey, Header, jws::encode};
 use uuid::Uuid;
@@ -12,7 +11,7 @@ use crate::{
     JwtConfig,
     data::UserRepo,
     model::{User, UserClaimsDTO, UserCredentialsDTO, UserTokenDTO},
-    service::{DbServiceError, LoginService},
+    service::{DbServiceError, LoginService, validator},
 };
 
 pub struct LoginServiceImpl {
@@ -64,20 +63,6 @@ impl LoginServiceImpl {
 
 #[async_trait]
 impl LoginService for LoginServiceImpl {
-    async fn check_user_credentials(
-        &self,
-        user: &UserCredentialsDTO,
-        user_data: &User,
-    ) -> Result<(), DbServiceError> {
-        let argon2 = Argon2::default();
-        let parsed_hash = PasswordHash::new(&user_data.pwhash)
-            .map_err(|e| DbServiceError::DatabaseError(e.to_string()))?;
-        argon2
-            .verify_password(user.pw.as_bytes(), &parsed_hash)
-            .map_err(|e| DbServiceError::WrongCredentials(e.to_string()))?;
-        Ok(())
-    }
-
     async fn get_user_data(&self, user: &UserCredentialsDTO) -> Result<User, DbServiceError> {
         let user_data = self
             .repo
@@ -93,7 +78,7 @@ impl LoginService for LoginServiceImpl {
         jwt_config: &JwtConfig,
     ) -> Result<UserTokenDTO, DbServiceError> {
         let user_data = self.get_user_data(user).await?;
-        self.check_user_credentials(user, &user_data).await?;
+        validator::check_user_credentials(user, &user_data)?;
         let jwt = self.create_token(&user_data, jwt_config)?;
         Ok(jwt)
     }
