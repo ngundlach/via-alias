@@ -97,7 +97,12 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
     let port = app_state.app_config.port;
     let app = Router::new()
         .merge(redirect::router())
+        .layer(axum::middleware::from_fn_with_state(
+            app_state.clone(),
+            middleware::auth_middleware,
+        ))
         .merge(login::router())
+        .route("/{alias}", get(redirect::get_redirect_handler))
         .route("/healthcheck", get(|| async { StatusCode::OK }))
         .with_state(app_state);
 
