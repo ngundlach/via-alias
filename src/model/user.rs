@@ -21,6 +21,18 @@ pub struct UserCredentialsDTO {
     pub pw: String,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct PasswordChangeDataDTO {
+    pub old_pw: String,
+    pub new_pw: String,
+}
+
+#[derive(Debug)]
+pub struct UserPasswordChangeDTO {
+    pub user_id: String,
+    pub pw: PasswordChangeDataDTO,
+}
+
 #[derive(Default, Deserialize, Serialize, Debug)]
 pub struct UserTokenDTO {
     pub access_token: String,

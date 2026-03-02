@@ -3,11 +3,12 @@ mod login_service;
 mod redirect_service;
 mod user_service;
 mod validator;
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use async_trait::async_trait;
 
 use crate::JwtConfig;
-use crate::model::{RedirectCreationDTO, User, UserCredentialsDTO, UserDTO, UserTokenDTO};
+use crate::model::{
+    RedirectCreationDTO, User, UserCredentialsDTO, UserDTO, UserPasswordChangeDTO, UserTokenDTO,
+};
 pub(crate) use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
 pub use crate::service::error::DbServiceError;
 pub use crate::service::login_service::LoginServiceImpl;
@@ -44,6 +45,10 @@ pub trait UserService {
     async fn get_admin_count(&self) -> Result<i64, DbServiceError>;
     async fn create_admin_first_start(&self) -> Result<(), DbServiceError>;
     async fn update_user(&self, user: &UserDTO) -> Result<(), DbServiceError>;
+    async fn change_user_pw(
+        &self,
+        password_change: &UserPasswordChangeDTO,
+    ) -> Result<(), DbServiceError>;
 }
 
 #[async_trait]

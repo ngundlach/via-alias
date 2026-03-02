@@ -13,13 +13,14 @@ use uuid::Uuid;
 
 use crate::{
     data::UserRepo,
-    model::{User, UserCredentialsDTO, UserDTO},
-    service::{DbServiceError, UserService},
+    model::{User, UserCredentialsDTO, UserDTO, UserPasswordChangeDTO},
+    service::{DbServiceError, UserService, validator},
 };
 
 pub struct UserServiceImpl {
     repo: Arc<dyn UserRepo + Send + Sync>,
 }
+
 impl UserServiceImpl {
     pub fn new(user_repo: Arc<dyn UserRepo + Send + Sync>) -> Self {
         UserServiceImpl { repo: user_repo }
@@ -31,6 +32,7 @@ impl UserServiceImpl {
         let hash = argon2.hash_password(user_password.as_bytes(), &salt)?;
         Ok(hash.to_string())
     }
+
     fn create_user(user: &UserCredentialsDTO) -> Result<User, Error> {
         let uuid = Uuid::new_v4();
         let hash = UserServiceImpl::create_password_hash_string(&user.pw)?;
@@ -44,6 +46,7 @@ impl UserServiceImpl {
         Ok(new_user)
     }
 }
+
 #[async_trait]
 impl UserService for UserServiceImpl {
     async fn register_user(&self, user: &UserCredentialsDTO) -> Result<UserDTO, DbServiceError> {
@@ -97,13 +100,36 @@ impl UserService for UserServiceImpl {
     }
 
     async fn update_user(&self, user: &UserDTO) -> Result<(), DbServiceError> {
-        let res = self
-            .repo
-            .update_user(user)
-            .await
-            .map_err(DbServiceError::from)?;
-        if res < 1 {
-            return Err(DbServiceError::NotFoundError);
+        // let res = self
+        //     .repo
+        //     .update_user_by_id(&user)
+        //     .await
+        //     .map_err(DbServiceError::from)?;
+        // if res < 1 {
+        //     return Err(DbServiceError::NotFoundError);
+        // }
+        Ok(())
+    }
+
+    async fn change_user_pw(
+        &self,
+        password_change: &UserPasswordChangeDTO,
+    ) -> Result<(), DbServiceError> {
+        let user_data = self.repo.read_user_by_id(&password_change.user_id).await?;
+        validator::check_user_credentials(
+            &UserCredentialsDTO {
+                name: user_data.name.clone(),
+                pw: password_change.pw.old_pw.clone(),
+            },
+            &user_data,
+        )?;
+        let mut user_data = user_data;
+        user_data.pwhash = Self::create_password_hash_string(&password_change.pw.new_pw)
+            .map_err(|e| DbServiceError::DatabaseError(e.to_string()))?;
+        let changed_user = self.repo.update_user_by_id(&user_data).await?;
+
+        if changed_user < 1 {
+            return Err(DbServiceError::DatabaseError("".to_owned()));
         }
         Ok(())
     }
