@@ -5,7 +5,6 @@ pub enum DbServiceError {
     NotFoundError,
     DatabaseError(String),
     PayloadValidationError(String, Vec<String>),
-    WrongCredentials(String),
     AuthError(String),
 }
 
@@ -22,7 +21,6 @@ impl fmt::Display for DbServiceError {
                     .join(", ");
                 write!(f, "Validation Error in {s}: {formatted_vec}")
             }
-            DbServiceError::WrongCredentials(msg) => write!(f, "User Credentials error: {}", msg),
             DbServiceError::AuthError(msg) => write!(f, "Auth error: {}", msg),
         }
     }
