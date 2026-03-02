@@ -62,10 +62,23 @@ impl RedirectService for RedirectServiceImpl {
             .map_err(DbServiceError::from)
             .map(|r| RedirectListDTO { redirects: r })
     }
+
     async fn delete_redirect(&self, alias: &str) -> Result<(), DbServiceError> {
         let res = self
             .repo
             .delete_redirect_by_alias(alias)
+            .await
+            .map_err(DbServiceError::from)?;
+        if res == 0 {
+            return Err(DbServiceError::NotFoundError);
+        }
+        Ok(())
+    }
+
+    async fn delete_user_redirect(&self, alias: &str, user_id: &str) -> Result<(), DbServiceError> {
+        let res = self
+            .repo
+            .delete_redirect_by_alias_with_user_id(alias, user_id)
             .await
             .map_err(DbServiceError::from)?;
         if res == 0 {

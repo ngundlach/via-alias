@@ -62,6 +62,19 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
         Ok(result.rows_affected())
     }
 
+    async fn delete_redirect_by_alias_with_user_id(
+        &self,
+        alias: &str,
+        user_id: &str,
+    ) -> Result<u64, sqlx::Error> {
+        let result = sqlx::query("DELETE FROM redirects WHERE alias = $1 AND owner_id = $2;")
+            .bind(alias)
+            .bind(user_id)
+            .execute(&self.db)
+            .await?;
+        Ok(result.rows_affected())
+    }
+
     async fn update_redirect_by_alias(
         &self,
         alias: &str,

@@ -35,8 +35,12 @@ pub(crate) fn router() -> Router<AppContext> {
 async fn delete_redirect_handler(
     State(app_state): State<AppContext>,
     Path(alias): Path<String>,
+    Extension(user_claims): Extension<UserClaimsDTO>,
 ) -> impl IntoResponse {
-    let query = app_state.redirect_service.delete_redirect(&alias).await;
+    let query = app_state
+        .redirect_service
+        .delete_user_redirect(&alias, &user_claims.user_id)
+        .await;
     match query {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND,
