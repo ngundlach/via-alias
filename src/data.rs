@@ -25,6 +25,7 @@ pub trait RedirectRepo: Send + Sync + 'static {
         &self,
         alias: &str,
         redirect: &UpdateUrlDTO,
+        user_id: &str,
     ) -> Result<u64, sqlx::Error>;
 }
 

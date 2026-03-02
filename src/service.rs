@@ -29,6 +29,7 @@ pub trait RedirectService {
         &self,
         alias: &str,
         redirect: &UpdateUrlDTO,
+        user_id: &str,
     ) -> Result<(), DbServiceError>;
 }
 

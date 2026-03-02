@@ -99,11 +99,12 @@ pub(crate) async fn get_redirect_handler(
 async fn update_redirect_handler(
     State(app_state): State<AppContext>,
     Path(alias): Path<String>,
+    Extension(user_claims): Extension<UserClaimsDTO>,
     Json(payload): Json<UpdateUrlDTO>,
 ) -> impl IntoResponse {
     let result = app_state
         .redirect_service
-        .update_redirect(&alias, &payload)
+        .update_redirect(&alias, &payload, &user_claims.user_id)
         .await;
     match result {
         Ok(()) => (

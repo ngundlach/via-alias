@@ -67,7 +67,7 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
         alias: &str,
         user_id: &str,
     ) -> Result<u64, sqlx::Error> {
-        let result = sqlx::query("DELETE FROM redirects WHERE alias = $1 AND owner_id = $2;")
+        let result = sqlx::query("DELETE FROM redirects WHERE alias = $1 AND owner = $2;")
             .bind(alias)
             .bind(user_id)
             .execute(&self.db)
@@ -79,10 +79,12 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
         &self,
         alias: &str,
         redirect: &UpdateUrlDTO,
+        user_id: &str,
     ) -> Result<u64, sqlx::Error> {
-        let result = sqlx::query("UPDATE redirects SET url = $1 WHERE alias = $2")
+        let result = sqlx::query("UPDATE redirects SET url = $1 WHERE alias = $2 AND owner = $3;")
             .bind(&redirect.url)
             .bind(alias)
+            .bind(user_id)
             .execute(&self.db)
             .await?;
         Ok(result.rows_affected())
@@ -92,6 +94,7 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
 #[cfg(test)]
 mod tests {
     use sqlx::SqlitePool;
+    use uuid::Uuid;
 
     use crate::{
         data::{RedirectRepo, RedirectRepoSqliteImpl},
@@ -244,19 +247,43 @@ mod tests {
         let pool = setup_test_db().await;
         let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
-        let alias_name = "somealias";
-        seed_test_db(&pool).await;
+        let (aliases, _) = seed_test_db(&pool).await;
         let update_dto = UpdateUrlDTO {
             url: "https://someotherurl.com".to_string(),
         };
-        let result = repo.update_redirect_by_alias(alias_name, &update_dto).await;
+        let result = repo
+            .update_redirect_by_alias(&aliases[0].redirect.alias, &update_dto, &aliases[0].owner)
+            .await;
         dbg!(result.as_ref().err());
         assert!(result.is_ok());
 
-        let updated = read_from_test_db(alias_name, &pool).await.unwrap();
+        let updated = read_from_test_db(&aliases[0].redirect.alias, &pool)
+            .await
+            .unwrap();
 
-        assert_eq!(updated.alias, "somealias");
-        assert_eq!(updated.url, "https://someotherurl.com");
+        assert_eq!(updated.alias, aliases[0].redirect.alias);
+        assert_eq!(updated.url, update_dto.url);
+    }
+
+    #[tokio::test]
+    async fn test_update_redirect_with_wrong_user_leads_to_no_updates() {
+        let pool = setup_test_db().await;
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
+
+        let (aliases, _) = seed_test_db(&pool).await;
+        let update_dto = UpdateUrlDTO {
+            url: "https://someotherurl.com".to_string(),
+        };
+        let result = repo
+            .update_redirect_by_alias(
+                &aliases[0].redirect.alias,
+                &update_dto,
+                &Uuid::new_v4().to_string(),
+            )
+            .await;
+        dbg!(result.as_ref().err());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
     }
 
     #[tokio::test]
@@ -264,12 +291,12 @@ mod tests {
         let pool = setup_test_db().await;
         let repo = RedirectRepoSqliteImpl::new(pool.clone());
 
-        seed_test_db(&pool).await;
+        let (aliases, _) = seed_test_db(&pool).await;
         let update_dto = UpdateUrlDTO {
             url: "https://someotherurl.com".to_string(),
         };
         let result = repo
-            .update_redirect_by_alias("somewrongalias", &update_dto)
+            .update_redirect_by_alias("somewrongalias", &update_dto, &aliases[0].owner)
             .await;
         dbg!(result.as_ref().err());
         assert!(result.is_ok());
@@ -409,5 +436,45 @@ mod tests {
         for dto in &dtos {
             assert!(updated_list.contains(&dto.redirect));
         }
+    }
+
+    #[tokio::test]
+    async fn test_delete_redirect_with_user_id_success() {
+        let pool = setup_test_db().await;
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
+
+        let (dtos, _) = seed_test_db(&pool).await;
+
+        let result = repo
+            .delete_redirect_by_alias_with_user_id(&dtos[0].redirect.alias, &dtos[0].owner)
+            .await;
+        dbg!(result.as_ref().err());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1);
+        let updated_list = read_all_from_test_db(&pool).await;
+        assert_eq!(updated_list.len(), 2);
+        assert!(updated_list.contains(&dtos[1].redirect));
+        assert!(updated_list.contains(&dtos[2].redirect));
+        assert!(!updated_list.contains(&dtos[0].redirect));
+    }
+
+    #[tokio::test]
+    async fn test_delete_user_redirect_with_wrong_user_leads_to_no_deletion() {
+        let pool = setup_test_db().await;
+        let repo = RedirectRepoSqliteImpl::new(pool.clone());
+
+        let (dtos, _) = seed_test_db(&pool).await;
+
+        let result = repo
+            .delete_redirect_by_alias_with_user_id(
+                &dtos[0].redirect.alias,
+                &Uuid::new_v4().to_string(),
+            )
+            .await;
+        dbg!(result.as_ref().err());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+        let db_list = read_all_from_test_db(&pool).await;
+        assert_eq!(db_list.len(), dtos.len())
     }
 }

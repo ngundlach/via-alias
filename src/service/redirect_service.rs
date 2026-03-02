@@ -91,11 +91,12 @@ impl RedirectService for RedirectServiceImpl {
         &self,
         alias: &str,
         redirect: &UpdateUrlDTO,
+        user_id: &str,
     ) -> Result<(), DbServiceError> {
         RedirectServiceImpl::validate_url(&redirect.url)?;
         let res = self
             .repo
-            .update_redirect_by_alias(alias, redirect)
+            .update_redirect_by_alias(alias, redirect, user_id)
             .await
             .map_err(DbServiceError::from)?;
         if res == 0 {
