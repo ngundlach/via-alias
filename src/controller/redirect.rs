@@ -1,13 +1,16 @@
 use axum::{
-    Json, Router,
+    Extension, Json, Router,
     extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Redirect},
-    routing::{delete, get, post},
+    routing::{delete, get, patch, post},
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{AppState, model::RedirectDTO};
+use crate::{
+    AppContext,
+    model::{RedirectCreationDTO, RedirectDTO, UserClaimsDTO},
+};
 use crate::{model::UpdateUrlDTO, service::DbServiceError};
 
 #[derive(Serialize, Deserialize)]
@@ -21,21 +24,16 @@ impl IntoResponse for ValidationErrorResponse {
     }
 }
 
-pub fn router() -> Router<AppState> {
+pub(crate) fn router() -> Router<AppContext> {
     Router::new()
-        .route("/{alias}", get(get_redirect_handler))
-        .route(
-            "/api/redirects",
-            post(create_redirect_handler).get(get_all_redirects_handler),
-        )
-        .route(
-            "/api/redirects/{alias}",
-            delete(delete_redirect_handler).patch(update_redirect_handler),
-        )
+        .route("/api/redirects", post(create_redirect_handler))
+        .route("/api/redirects", get(get_all_user_redirects_handler))
+        .route("/api/redirects/{alias}", patch(update_redirect_handler))
+        .route("/api/redirects/{alias}", delete(delete_redirect_handler))
 }
 
 async fn delete_redirect_handler(
-    State(app_state): State<AppState>,
+    State(app_state): State<AppContext>,
     Path(alias): Path<String>,
 ) -> impl IntoResponse {
     let query = app_state.redirect_service.delete_redirect(&alias).await;
@@ -45,18 +43,33 @@ async fn delete_redirect_handler(
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
-async fn get_all_redirects_handler(State(app_state): State<AppState>) -> impl IntoResponse {
-    let redirects = app_state.redirect_service.get_all_redirects().await;
+async fn get_all_user_redirects_handler(
+    State(app_state): State<AppContext>,
+    Extension(user_claims): Extension<UserClaimsDTO>,
+) -> impl IntoResponse {
+    let redirects = app_state
+        .redirect_service
+        .get_all_user_redirects(&user_claims.user_id)
+        .await;
     match redirects {
         Ok(found) => Json(found).into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
+
 async fn create_redirect_handler(
-    State(app_state): State<AppState>,
+    State(app_state): State<AppContext>,
+    Extension(user_claims): Extension<UserClaimsDTO>,
     Json(payload): Json<RedirectDTO>,
 ) -> impl IntoResponse {
-    let query = app_state.redirect_service.create_redirect(&payload).await;
+    let redirect_creation = RedirectCreationDTO {
+        redirect: payload.clone(),
+        owner: user_claims.user_id,
+    };
+    let query = app_state
+        .redirect_service
+        .create_redirect(&redirect_creation)
+        .await;
     match query {
         Ok(_) => (StatusCode::CREATED, Json(payload)).into_response(),
         Err(DbServiceError::PayloadValidationError(s, e)) => ValidationErrorResponse {
@@ -68,8 +81,8 @@ async fn create_redirect_handler(
     }
 }
 
-async fn get_redirect_handler(
-    State(app_state): State<AppState>,
+pub(crate) async fn get_redirect_handler(
+    State(app_state): State<AppContext>,
     Path(alias): Path<String>,
 ) -> impl IntoResponse {
     let redirect = app_state.redirect_service.get_redirect(&alias).await;
@@ -80,7 +93,7 @@ async fn get_redirect_handler(
     }
 }
 async fn update_redirect_handler(
-    State(app_state): State<AppState>,
+    State(app_state): State<AppContext>,
     Path(alias): Path<String>,
     Json(payload): Json<UpdateUrlDTO>,
 ) -> impl IntoResponse {
