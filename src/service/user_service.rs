@@ -40,7 +40,7 @@ impl UserServiceImpl {
         let new_user = User {
             id: uuid.to_string(),
             name: user.name.clone(),
-            pwhash: hash.to_string(),
+            pwhash: hash,
             is_admin: false,
         };
         Ok(new_user)
@@ -95,7 +95,7 @@ impl UserService for UserServiceImpl {
             println!("{:<10} {}", "password:", initial_admin.pw);
             println!("\n!!! Remember to change the password !!!");
             println!("----------------------------------------");
-        };
+        }
         Ok(())
     }
 

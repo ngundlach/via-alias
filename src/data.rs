@@ -13,7 +13,7 @@ pub trait RedirectRepo: Send + Sync + 'static {
     async fn read_all_redirects(&self) -> Result<Vec<RedirectDTO>, sqlx::Error>;
     async fn read_all_redirects_by_user_id(
         &self,
-        user_id: &String,
+        user_id: &str,
     ) -> Result<Vec<RedirectDTO>, sqlx::Error>;
     async fn delete_redirect_by_alias(&self, alias: &str) -> Result<u64, sqlx::Error>;
     async fn delete_redirect_by_alias_with_user_id(

@@ -54,10 +54,10 @@ impl RedirectService for RedirectServiceImpl {
 
     async fn get_all_user_redirects(
         &self,
-        user_id: &String,
+        user_id: &str,
     ) -> Result<RedirectListDTO, DbServiceError> {
         self.repo
-            .read_all_redirects_by_user_id(&user_id)
+            .read_all_redirects_by_user_id(user_id)
             .await
             .map_err(DbServiceError::from)
             .map(|r| RedirectListDTO { redirects: r })

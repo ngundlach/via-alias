@@ -30,11 +30,7 @@ impl LoginServiceImpl {
             .as_secs() as usize
     }
 
-    fn create_token(
-        &self,
-        user: &User,
-        jwt_config: &JwtConfig,
-    ) -> Result<UserTokenDTO, DbServiceError> {
+    fn create_token(user: &User, jwt_config: &JwtConfig) -> Result<UserTokenDTO, DbServiceError> {
         let expiration_time = Self::expiration_time(Duration::from_mins(15));
         let user_claims = UserClaimsDTO {
             user_id: user.id.clone(),
@@ -79,7 +75,7 @@ impl LoginService for LoginServiceImpl {
     ) -> Result<UserTokenDTO, DbServiceError> {
         let user_data = self.get_user_data(user).await?;
         validator::check_user_credentials(user, &user_data)?;
-        let jwt = self.create_token(&user_data, jwt_config)?;
+        let jwt = Self::create_token(&user_data, jwt_config)?;
         Ok(jwt)
     }
 }

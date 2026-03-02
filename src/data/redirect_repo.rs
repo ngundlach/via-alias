@@ -44,11 +44,11 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
 
     async fn read_all_redirects_by_user_id(
         &self,
-        user_id: &String,
+        user_id: &str,
     ) -> Result<Vec<RedirectDTO>, sqlx::Error> {
         let redirects =
             sqlx::query_as::<_, RedirectDTO>("SELECT alias, url FROM redirects WHERE owner = $1;")
-                .bind(&user_id)
+                .bind(user_id)
                 .fetch_all(&self.db)
                 .await?;
         Ok(redirects)
@@ -117,7 +117,7 @@ mod tests {
     async fn seed_test_db(pool: &SqlitePool) -> (Vec<RedirectCreationDTO>, User) {
         let owner = get_test_user_data();
 
-        insert_user_into_test_db(&owner, &pool).await;
+        insert_user_into_test_db(&owner, pool).await;
 
         let dtos = vec![
             RedirectCreationDTO {
