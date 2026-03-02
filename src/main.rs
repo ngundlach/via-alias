@@ -9,7 +9,7 @@ use std::{env, error::Error, fs::read_to_string, net::SocketAddr, sync::Arc};
 use tokio::signal;
 
 use crate::{
-    controller::{login, redirect},
+    controller::{login, redirect, user},
     data::{RedirectRepoSqliteImpl, UserRepoSqliteImpl},
     service::{
         LoginService, LoginServiceImpl, RedirectService, RedirectServiceImpl, UserService,
@@ -97,6 +97,7 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
     let port = app_state.app_config.port;
     let app = Router::new()
         .merge(redirect::router())
+        .merge(user::user_management_router())
         .layer(axum::middleware::from_fn_with_state(
             app_state.clone(),
             middleware::auth_middleware,
