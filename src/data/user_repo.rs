@@ -25,6 +25,13 @@ impl UserRepo for UserRepoSqliteImpl {
             .await
     }
 
+    async fn read_user_by_id(&self, id: &str) -> Result<User, sqlx::Error> {
+        sqlx::query_as::<_, User>("SELECT id, name, pwhash, is_admin FROM users WHERE id = $1;")
+            .bind(id)
+            .fetch_one(&self.db)
+            .await
+    }
+
     async fn create_user(&self, user: &User) -> Result<UserDTO, sqlx::Error> {
         sqlx::query("INSERT INTO users (id, name, pwhash, is_admin) VALUES ($1, $2, $3, $4);")
             .bind(&user.id)
@@ -61,6 +68,7 @@ impl UserRepo for UserRepoSqliteImpl {
 #[cfg(test)]
 mod tests {
     use sqlx::SqlitePool;
+    use uuid::Uuid;
 
     use crate::{
         data::{UserRepo, UserRepoSqliteImpl},
@@ -209,6 +217,32 @@ mod tests {
         seed_test_db(&pool).await;
 
         let result = repo.read_user_by_name("unknown").await;
+        assert!(result.is_err());
+        assert!(matches!(result, Err(sqlx::Error::RowNotFound)));
+    }
+
+    #[tokio::test]
+    async fn test_read_user_by_id_succeeds() {
+        let pool = setup_test_db().await;
+        let repo = UserRepoSqliteImpl::new(pool.clone());
+
+        let users = seed_test_db(&pool).await;
+
+        let result = repo.read_user_by_id(&users[0].id).await;
+        dbg!(result.as_ref().err());
+        assert!(result.is_ok());
+        let expected = users[0].clone();
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[tokio::test]
+    async fn test_read_user_by_id_fails() {
+        let pool = setup_test_db().await;
+        let repo = UserRepoSqliteImpl::new(pool.clone());
+
+        seed_test_db(&pool).await;
+
+        let result = repo.read_user_by_id(&Uuid::new_v4().to_string()).await;
         assert!(result.is_err());
         assert!(matches!(result, Err(sqlx::Error::RowNotFound)));
     }

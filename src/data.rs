@@ -32,6 +32,7 @@ pub trait RedirectRepo: Send + Sync + 'static {
 #[async_trait]
 pub trait UserRepo: Send + Sync + 'static {
     async fn read_user_by_name(&self, name: &str) -> Result<User, sqlx::Error>;
+    async fn read_user_by_id(&self, id: &str) -> Result<User, sqlx::Error>;
     async fn create_user(&self, user: &User) -> Result<UserDTO, sqlx::Error>;
     async fn count_user_with_is_admin(&self) -> Result<i64, sqlx::Error>;
     async fn update_user(&self, user: &UserDTO) -> Result<u64, sqlx::Error>;
