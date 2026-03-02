@@ -92,6 +92,7 @@ pub(crate) async fn get_redirect_handler(
     let redirect = app_state.redirect_service.get_redirect(&alias).await;
     match redirect {
         Ok(r) => Redirect::temporary(&r.url).into_response(),
+        Err(DbServiceError::AuthError(_)) => StatusCode::UNAUTHORIZED.into_response(),
         Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND.into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
@@ -116,6 +117,7 @@ async fn update_redirect_handler(
         )
             .into_response(),
         Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND.into_response(),
+        Err(DbServiceError::AuthError(_)) => StatusCode::UNAUTHORIZED.into_response(),
         Err(DbServiceError::PayloadValidationError(s, e)) => ValidationErrorResponse {
             on_item: s,
             errors: e,
