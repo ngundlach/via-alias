@@ -5,8 +5,8 @@ mod user_service;
 mod validator;
 use async_trait::async_trait;
 
-pub use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
-use crate::model::{User, UserCredentialsDTO, UserDTO, UserTokenDTO};
+use crate::model::{RedirectCreationDTO, User, UserCredentialsDTO, UserDTO, UserTokenDTO};
+pub(crate) use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
 pub use crate::service::error::DbServiceError;
 pub use crate::service::login_service::LoginServiceImpl;
 pub use crate::service::redirect_service::RedirectServiceImpl;
@@ -16,8 +16,11 @@ pub use crate::service::validator::PayloadValidator;
 #[async_trait]
 pub trait RedirectService {
     async fn get_redirect(&self, alias: &str) -> Result<RedirectDTO, DbServiceError>;
-    async fn create_redirect(&self, redirect: &RedirectDTO) -> Result<(), DbServiceError>;
-    async fn get_all_redirects(&self) -> Result<RedirectListDTO, DbServiceError>;
+    async fn create_redirect(&self, redirect: &RedirectCreationDTO) -> Result<(), DbServiceError>;
+    async fn get_all_user_redirects(
+        &self,
+        user_id: &String,
+    ) -> Result<RedirectListDTO, DbServiceError>;
     async fn delete_redirect(&self, alias: &str) -> Result<(), DbServiceError>;
     async fn update_redirect(
         &self,

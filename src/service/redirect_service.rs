@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     data::RedirectRepo,
-    model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO},
+    model::{RedirectCreationDTO, RedirectDTO, RedirectListDTO, UpdateUrlDTO},
     service::{PayloadValidator, RedirectService, error::DbServiceError},
 };
 
@@ -12,7 +12,7 @@ pub struct RedirectServiceImpl {
     repo: Arc<dyn RedirectRepo + Send + Sync>,
 }
 impl RedirectServiceImpl {
-    pub fn new(repo: Arc<dyn RedirectRepo + Send + Sync>) -> Self {
+    pub(crate) fn new(repo: Arc<dyn RedirectRepo + Send + Sync>) -> Self {
         RedirectServiceImpl { repo }
     }
     fn validate_alias(alias: &str) -> Result<(), DbServiceError> {
@@ -43,18 +43,21 @@ impl RedirectService for RedirectServiceImpl {
             .map_err(DbServiceError::from)
     }
 
-    async fn create_redirect(&self, redirect: &RedirectDTO) -> Result<(), DbServiceError> {
-        RedirectServiceImpl::validate_alias(&redirect.alias)?;
-        RedirectServiceImpl::validate_url(&redirect.url)?;
+    async fn create_redirect(&self, redirect: &RedirectCreationDTO) -> Result<(), DbServiceError> {
+        RedirectServiceImpl::validate_alias(&redirect.redirect.alias)?;
+        RedirectServiceImpl::validate_url(&redirect.redirect.url)?;
         self.repo
             .create_redirect(redirect)
             .await
             .map_err(DbServiceError::from)
     }
 
-    async fn get_all_redirects(&self) -> Result<RedirectListDTO, DbServiceError> {
+    async fn get_all_user_redirects(
+        &self,
+        user_id: &String,
+    ) -> Result<RedirectListDTO, DbServiceError> {
         self.repo
-            .read_all_redirects()
+            .read_all_redirects_by_user_id(&user_id)
             .await
             .map_err(DbServiceError::from)
             .map(|r| RedirectListDTO { redirects: r })
