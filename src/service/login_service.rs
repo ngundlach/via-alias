@@ -5,10 +5,11 @@ use std::{
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use async_trait::async_trait;
-use jsonwebtoken::{Algorithm, EncodingKey, Header, jws::encode};
+use jsonwebtoken::{EncodingKey, Header, jws::encode};
 use uuid::Uuid;
 
 use crate::{
+    JwtConfig,
     data::UserRepo,
     model::{User, UserClaimsDTO, UserCredentialsDTO, UserTokenDTO},
     service::{DbServiceError, LoginService},
@@ -30,7 +31,11 @@ impl LoginServiceImpl {
             .as_secs() as usize
     }
 
-    fn create_token(&self, user: &User, jwt_secret: &str) -> Result<UserTokenDTO, DbServiceError> {
+    fn create_token(
+        &self,
+        user: &User,
+        jwt_config: &JwtConfig,
+    ) -> Result<UserTokenDTO, DbServiceError> {
         let expiration_time = Self::expiration_time(Duration::from_mins(15));
         let user_claims = UserClaimsDTO {
             user_id: user.id.clone(),
@@ -39,13 +44,13 @@ impl LoginServiceImpl {
             jti: Uuid::new_v4().to_string(),
         };
 
-        let header = Header::new(Algorithm::HS512);
+        let header = Header::new(jwt_config.jwt_alg);
         let token = encode(
             &header,
             Some(&user_claims),
-            &EncodingKey::from_secret(jwt_secret.as_bytes()),
+            &EncodingKey::from_secret(jwt_config.jwt_secret.as_bytes()),
         )
-        .map_err(|_| DbServiceError::LoginError("Error during token creation".to_owned()))?;
+        .map_err(|_| DbServiceError::AuthError("Error during token creation".to_owned()))?;
 
         let user_token = UserTokenDTO {
             access_token: format!("{}.{}.{}", token.protected, token.payload, token.signature),
@@ -85,11 +90,11 @@ impl LoginService for LoginServiceImpl {
     async fn login_user(
         &self,
         user: &UserCredentialsDTO,
-        jwt_secret: &str,
+        jwt_config: &JwtConfig,
     ) -> Result<UserTokenDTO, DbServiceError> {
         let user_data = self.get_user_data(user).await?;
         self.check_user_credentials(user, &user_data).await?;
-        let jwt = self.create_token(&user_data, jwt_secret)?;
+        let jwt = self.create_token(&user_data, jwt_config)?;
         Ok(jwt)
     }
 }

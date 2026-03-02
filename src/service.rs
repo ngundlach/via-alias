@@ -5,6 +5,7 @@ mod user_service;
 mod validator;
 use async_trait::async_trait;
 
+use crate::JwtConfig;
 use crate::model::{RedirectCreationDTO, User, UserCredentialsDTO, UserDTO, UserTokenDTO};
 pub(crate) use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
 pub use crate::service::error::DbServiceError;
@@ -52,6 +53,6 @@ pub trait LoginService {
     async fn login_user(
         &self,
         user: &UserCredentialsDTO,
-        jwt_secret: &str,
+        jwt_config: &JwtConfig,
     ) -> Result<UserTokenDTO, DbServiceError>;
 }
