@@ -18,7 +18,7 @@ use crate::{
 };
 
 #[derive(Clone)]
-struct AppState {
+struct AppContext {
     app_config: AppConfig,
     redirect_service: Arc<dyn RedirectService + Send + Sync>,
     login_service: Arc<dyn LoginService + Send + Sync>,
@@ -26,24 +26,29 @@ struct AppState {
 }
 #[derive(Clone)]
 struct AppConfig {
-    jwt_secret: String,
     port: u16,
+    jwt_config: JwtConfig,
+}
+#[derive(Clone)]
+struct JwtConfig {
+    jwt_secret: String,
+    jwt_alg: jsonwebtoken::Algorithm,
 }
 
-fn create_app_contenxt(pool: &Pool<Sqlite>) -> Result<AppState, Box<dyn Error>> {
+fn create_app_contenxt(pool: &Pool<Sqlite>) -> Result<AppContext, Box<dyn Error>> {
     let app_config = generate_app_config()?;
     let redirect_repo = Arc::new(RedirectRepoSqliteImpl::new(pool.clone()));
     let user_repo = Arc::new(UserRepoSqliteImpl::new(pool.clone()));
     let redirect_service = RedirectServiceImpl::new(redirect_repo);
     let user_service = UserServiceImpl::new(user_repo.clone());
     let login_service = LoginServiceImpl::new(user_repo);
-    let app_state = AppState {
+    let app_context = AppContext {
         redirect_service: Arc::new(redirect_service),
         login_service: Arc::new(login_service),
         user_service: Arc::new(user_service),
         app_config,
     };
-    Ok(app_state)
+    Ok(app_context)
 }
 
 fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
@@ -56,7 +61,12 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
         .parse()
         .map_err(|_| "VIA_ALIAS_PORT is not a valid port number")?;
 
-    Ok(AppConfig { jwt_secret, port })
+    let jwt_config = JwtConfig {
+        jwt_secret,
+        jwt_alg: jsonwebtoken::Algorithm::HS512,
+    };
+
+    Ok(AppConfig { port, jwt_config })
 }
 
 fn read_secret(name: &str) -> Result<String, std::io::Error> {
