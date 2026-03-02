@@ -55,10 +55,11 @@ impl UserRepo for UserRepoSqliteImpl {
     }
 
     async fn update_user_by_id(&self, user: &User) -> Result<u64, sqlx::Error> {
-        let result = sqlx::query("UPDATE users SET name=$2, is_admin=$3 WHERE id=$1;")
+        let result = sqlx::query("UPDATE users SET name=$2, is_admin=$3, pwhash = $4 WHERE id=$1;")
             .bind(&user.id)
             .bind(&user.name)
             .bind(user.is_admin)
+            .bind(&user.pwhash)
             .execute(&self.db)
             .await?;
         Ok(result.rows_affected())
@@ -72,7 +73,7 @@ mod tests {
 
     use crate::{
         data::{UserRepo, UserRepoSqliteImpl},
-        model::{User, UserDTO},
+        model::User,
     };
 
     async fn setup_test_db() -> SqlitePool {
@@ -174,9 +175,24 @@ mod tests {
 
         let updated = read_from_test_db(&updated_user.id, &pool).await.unwrap();
 
-        assert_eq!(updated.name, updated_user.name);
-        assert_eq!(updated.is_admin, false);
-        assert_eq!(updated.id, updated_user.id)
+        assert_eq!(updated_user, updated);
+    }
+
+    #[tokio::test]
+    async fn test_update_user_pw_success() {
+        let pool = setup_test_db().await;
+        let repo = UserRepoSqliteImpl::new(pool.clone());
+
+        let users = seed_test_db(&pool).await;
+        let mut updated_user = users[0].clone();
+        updated_user.pwhash = "not_a_pw_hash_but_changed".to_owned();
+        let result = repo.update_user_by_id(&updated_user).await;
+        dbg!(result.as_ref().err());
+        assert!(result.is_ok());
+
+        let updated = read_from_test_db(&updated_user.id, &pool).await.unwrap();
+
+        assert_eq!(updated_user, updated);
     }
 
     #[tokio::test]
