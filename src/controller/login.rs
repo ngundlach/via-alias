@@ -1,18 +1,18 @@
 use axum::{Json, Router, extract::State, http::StatusCode, response::IntoResponse, routing::post};
 
-use crate::{AppState, model::UserCredentialsDTO};
+use crate::{AppContext, model::UserCredentialsDTO};
 
-pub fn router() -> Router<AppState> {
+pub fn router() -> Router<AppContext> {
     Router::new().route("/api/auth/login", post(login_user_handler))
 }
 
 async fn login_user_handler(
-    State(app_state): State<AppState>,
+    State(app_state): State<AppContext>,
     Json(user): Json<UserCredentialsDTO>,
 ) -> impl IntoResponse {
     let res = app_state
         .login_service
-        .login_user(&user, &app_state.app_config.jwt_secret)
+        .login_user(&user, &app_state.app_config.jwt_config)
         .await;
     match res {
         Ok(t) => (StatusCode::OK, Json(t)).into_response(),
