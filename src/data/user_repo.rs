@@ -54,7 +54,7 @@ impl UserRepo for UserRepoSqliteImpl {
         Ok(result)
     }
 
-    async fn update_user(&self, user: &UserDTO) -> Result<u64, sqlx::Error> {
+    async fn update_user_by_id(&self, user: &User) -> Result<u64, sqlx::Error> {
         let result = sqlx::query("UPDATE users SET name=$2, is_admin=$3 WHERE id=$1;")
             .bind(&user.id)
             .bind(&user.name)
@@ -166,20 +166,17 @@ mod tests {
         let repo = UserRepoSqliteImpl::new(pool.clone());
 
         let users = seed_test_db(&pool).await;
-        let user_dto = UserDTO {
-            id: users[0].id.clone(),
-            name: "Steven".to_owned(),
-            is_admin: false,
-        };
-        let result = repo.update_user(&user_dto).await;
+        let mut updated_user = users[0].clone();
+        updated_user.name = "Steven".to_owned();
+        let result = repo.update_user_by_id(&updated_user).await;
         dbg!(result.as_ref().err());
         assert!(result.is_ok());
 
-        let updated = read_from_test_db(&user_dto.id, &pool).await.unwrap();
+        let updated = read_from_test_db(&updated_user.id, &pool).await.unwrap();
 
-        assert_eq!(updated.name, "Steven");
+        assert_eq!(updated.name, updated_user.name);
         assert_eq!(updated.is_admin, false);
-        assert_eq!(updated.id, user_dto.id)
+        assert_eq!(updated.id, updated_user.id)
     }
 
     #[tokio::test]
