@@ -48,8 +48,5 @@ pub(crate) trait UserRegistrationTokenRepo: Send + Sync + 'static {
     async fn create_user_registration_token(&self)
     -> Result<UserRegistrationToken, DbServiceError>;
     async fn read_token(&self, token: &str) -> Result<UserRegistrationToken, DbServiceError>;
-    async fn delete_user_registration_token(
-        &self,
-        token: &UserRegistrationToken,
-    ) -> Result<(), DbServiceError>;
+    async fn delete_user_registration_token(&self, token: &str) -> Result<(), DbServiceError>;
 }
