@@ -64,16 +64,7 @@ impl UserService for UserServiceImpl {
         let token = self
             .user_registration_token_repo
             .read_token(registration_token)
-            .await
-            .map_err(|_| DbServiceError::AuthError("token not found".to_owned()))?;
-
-        if !token.is_valid() {
-            _ = self
-                .user_registration_token_repo
-                .delete_user_registration_token(&token)
-                .await;
-            return Err(DbServiceError::AuthError("token is invalid".to_owned()));
-        }
+            .await?;
 
         let new_user =
             Self::create_user(user).map_err(|e| DbServiceError::DatabaseError(e.to_string()))?;
@@ -81,7 +72,7 @@ impl UserService for UserServiceImpl {
         let created_user = self.user_repo.create_user(&new_user).await?;
 
         self.user_registration_token_repo
-            .delete_user_registration_token(&token)
+            .delete_user_registration_token(&token.registration_token)
             .await?;
         Ok(created_user)
     }
