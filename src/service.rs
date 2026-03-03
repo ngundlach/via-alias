@@ -7,7 +7,8 @@ use async_trait::async_trait;
 
 use crate::JwtConfig;
 use crate::model::{
-    RedirectCreationDTO, User, UserCredentialsDTO, UserDTO, UserPasswordChangeDTO, UserTokenDTO,
+    RedirectCreationDTO, User, UserCredentialsDTO, UserDTO, UserPasswordChangeDTO,
+    UserRegistrationTokenDTO, UserTokenDTO,
 };
 pub(crate) use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
 pub use crate::service::error::DbServiceError;
@@ -37,7 +38,11 @@ pub trait RedirectService {
 
 #[async_trait]
 pub trait UserService {
-    async fn register_user(&self, user: &UserCredentialsDTO) -> Result<UserDTO, DbServiceError>;
+    async fn register_user(
+        &self,
+        user: &UserCredentialsDTO,
+        registration_token: &str,
+    ) -> Result<UserDTO, DbServiceError>;
     async fn register_user_as_admin(
         &self,
         user: &UserCredentialsDTO,
@@ -49,6 +54,9 @@ pub trait UserService {
         &self,
         password_change: &UserPasswordChangeDTO,
     ) -> Result<(), DbServiceError>;
+    async fn create_user_registration_token(
+        &self,
+    ) -> Result<UserRegistrationTokenDTO, DbServiceError>;
 }
 
 #[async_trait]
