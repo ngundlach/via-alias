@@ -1,7 +1,9 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 
 use crate::{
-    model::{User, UserCredentialsDTO},
+    model::{User, UserCredentialsDTO, UserRegistrationToken},
     service::DbServiceError,
 };
 
@@ -80,6 +82,19 @@ pub(crate) fn check_user_credentials(
     argon2
         .verify_password(user.pw.as_bytes(), &parsed_hash)
         .map_err(|e| DbServiceError::AuthError(e.to_string()))?;
+    Ok(())
+}
+
+pub(crate) fn validate_registration_token(
+    token: &UserRegistrationToken,
+) -> Result<(), DbServiceError> {
+    let current_time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock is before Unix epoch")
+        .as_secs();
+    if token.exp_at < current_time {
+        return Err(DbServiceError::TokenInvalid);
+    }
     Ok(())
 }
 

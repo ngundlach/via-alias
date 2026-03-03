@@ -8,6 +8,7 @@ pub enum DbServiceError {
     DatabaseError(String),
     PayloadValidationError(String, Vec<String>),
     AuthError(String),
+    TokenInvalid,
 }
 
 impl fmt::Display for DbServiceError {
@@ -24,6 +25,7 @@ impl fmt::Display for DbServiceError {
                 write!(f, "Validation Error in {s}: {formatted_vec}")
             }
             DbServiceError::AuthError(msg) => write!(f, "Auth error: {}", msg),
+            DbServiceError::TokenInvalid => write!(f, "Token is invalid"),
         }
     }
 }
