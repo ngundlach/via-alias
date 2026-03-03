@@ -1,6 +1,8 @@
 use std::fmt;
 
-#[derive(Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
 pub enum DbServiceError {
     NotFoundError,
     DatabaseError(String),
