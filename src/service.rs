@@ -16,6 +16,7 @@ pub use crate::service::login_service::LoginServiceImpl;
 pub use crate::service::redirect_service::RedirectServiceImpl;
 pub use crate::service::user_service::UserServiceImpl;
 pub use crate::service::validator::PayloadValidator;
+pub(crate) use crate::service::validator::validate_registration_token;
 
 #[async_trait]
 pub trait RedirectService {
