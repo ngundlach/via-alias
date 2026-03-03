@@ -130,18 +130,6 @@ impl UserService for UserServiceImpl {
         Ok(())
     }
 
-    async fn update_user(&self, user: &UserDTO) -> Result<(), DbServiceError> {
-        // let res = self
-        //     .repo
-        //     .update_user_by_id(&user)
-        //     .await
-        //     .map_err(DbServiceError::from)?;
-        // if res < 1 {
-        //     return Err(DbServiceError::NotFoundError);
-        // }
-        Ok(())
-    }
-
     async fn change_user_pw(
         &self,
         password_change: &UserPasswordChangeDTO,

@@ -49,7 +49,6 @@ pub trait UserService {
     ) -> Result<UserDTO, DbServiceError>;
     async fn get_admin_count(&self) -> Result<i64, DbServiceError>;
     async fn create_admin_first_start(&self) -> Result<(), DbServiceError>;
-    async fn update_user(&self, user: &UserDTO) -> Result<(), DbServiceError>;
     async fn change_user_pw(
         &self,
         password_change: &UserPasswordChangeDTO,
