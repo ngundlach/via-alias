@@ -1,3 +1,9 @@
+use std::{
+    alloc::System,
+    fmt::format,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Deserialize, Serialize, sqlx::FromRow, Debug, Clone, PartialEq)]
@@ -47,4 +53,30 @@ pub struct UserClaimsDTO {
     pub is_admin: bool,
     pub exp: usize,
     pub jti: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Hash, Eq)]
+pub struct UserRegistrationTokenDTO {
+    pub registration_token: String,
+}
+
+#[derive(Default, Deserialize, Serialize, Debug)]
+pub struct UserRegistrationDTO {
+    pub name: String,
+    pub pw: String,
+    pub token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Hash, Eq)]
+pub struct UserRegistrationToken {
+    pub registration_token: String,
+    pub exp_time: Duration,
+}
+impl UserRegistrationToken {
+    pub(crate) fn is_valid(&self) -> bool {
+        let curren_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock is before Unix epoch");
+        self.exp_time < curren_time
+    }
 }

@@ -1,9 +1,14 @@
 use async_trait::async_trait;
 
-use crate::model::{RedirectCreationDTO, RedirectDTO, UpdateUrlDTO, User, UserDTO};
+use crate::{
+    model::{RedirectCreationDTO, RedirectDTO, UpdateUrlDTO, User, UserDTO, UserRegistrationToken},
+    service::DbServiceError,
+};
 mod redirect_repo;
+mod user_registration_token_repo;
 mod user_repo;
 pub use crate::data::redirect_repo::RedirectRepoSqliteImpl;
+pub(crate) use crate::data::user_registration_token_repo::UserRegistrationTokenInMemoryImpl;
 pub use crate::data::user_repo::UserRepoSqliteImpl;
 
 #[async_trait]
@@ -36,4 +41,15 @@ pub trait UserRepo: Send + Sync + 'static {
     async fn create_user(&self, user: &User) -> Result<UserDTO, sqlx::Error>;
     async fn count_user_with_is_admin(&self) -> Result<i64, sqlx::Error>;
     async fn update_user_by_id(&self, user: &User) -> Result<u64, sqlx::Error>;
+}
+
+#[async_trait]
+pub(crate) trait UserRegistrationTokenRepo: Send + Sync + 'static {
+    async fn create_user_registration_token(&self)
+    -> Result<UserRegistrationToken, DbServiceError>;
+    async fn read_token(&self, token: &str) -> Result<UserRegistrationToken, DbServiceError>;
+    async fn delete_user_registration_token(
+        &self,
+        token: &UserRegistrationToken,
+    ) -> Result<(), DbServiceError>;
 }
