@@ -1,4 +1,4 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
@@ -66,13 +66,14 @@ pub struct UserRegistrationDTO {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Hash, Eq)]
 pub struct UserRegistrationToken {
     pub registration_token: String,
-    pub exp_time: Duration,
+    pub exp_at: u64,
 }
 impl UserRegistrationToken {
     pub(crate) fn is_valid(&self) -> bool {
-        let curren_time = SystemTime::now()
+        let current_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("system clock is before Unix epoch");
-        self.exp_time < curren_time
+            .expect("system clock is before Unix epoch")
+            .as_secs();
+        self.exp_at < current_time
     }
 }
