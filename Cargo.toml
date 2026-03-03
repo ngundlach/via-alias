@@ -13,6 +13,7 @@ tokio = { version = "1.49.0", features = ["signal", "rt-multi-thread"] }
 uuid = { version = "1.21.0", features = ["v4"] }
 base64 = "0.22.1"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+tokio-util = "0.7.18"
 
 [profile.release]
 opt-level = "s"

@@ -6,6 +6,7 @@ use std::{
 
 use async_trait::async_trait;
 use tokio::sync::RwLock;
+use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::{
@@ -16,20 +17,48 @@ use crate::{
 
 pub(crate) struct UserRegistrationTokenInMemoryImpl {
     token_store: Arc<RwLock<TokenStore>>,
+    cancel_token: CancellationToken,
 }
 struct TokenStore {
     tokens: HashMap<String, UserRegistrationToken>,
     expirations: BTreeMap<u64, HashSet<String>>,
 }
 
+impl Drop for UserRegistrationTokenInMemoryImpl {
+    fn drop(&mut self) {
+        self.cancel_token.cancel();
+    }
+}
+
 impl UserRegistrationTokenInMemoryImpl {
     pub fn new() -> Self {
+        let cancel_token = CancellationToken::new();
         Self {
+            cancel_token,
             token_store: Arc::new(RwLock::new(TokenStore {
                 tokens: HashMap::new(),
                 expirations: BTreeMap::new(),
             })),
         }
+    }
+
+    pub(crate) fn start_cleanup(self: &Arc<Self>, cleanup_interval: Duration) {
+        let repo = self.clone();
+        let cancel_token = self.cancel_token.clone();
+        tokio::spawn(async move {
+            let mut timer = tokio::time::interval(cleanup_interval);
+
+            loop {
+                tokio::select! {
+                    _ = timer.tick() => {
+                         repo.delete_expired_tokens().await;
+                     }
+                     _ = cancel_token.cancelled() => {
+                         break;
+                     }
+                }
+            }
+        });
     }
 
     async fn delete_expired_tokens(&self) {
