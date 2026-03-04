@@ -39,6 +39,7 @@ struct AppContext {
 #[derive(Clone)]
 struct AppConfig {
     port: u16,
+    db_location: String,
     jwt_config: JwtConfig,
 }
 #[derive(Clone)]
@@ -48,8 +49,10 @@ struct JwtConfig {
     jwt_ttl: u64,
 }
 
-fn create_app_context(pool: &Pool<Sqlite>) -> Result<AppContext, Box<dyn Error>> {
-    let app_config = generate_app_config()?;
+fn create_app_context(
+    pool: &Pool<Sqlite>,
+    app_config: AppConfig,
+) -> Result<AppContext, Box<dyn Error>> {
     let redirect_repo = Arc::new(RedirectRepoSqliteImpl::new(pool.clone()));
     let user_repo = Arc::new(UserRepoSqliteImpl::new(pool.clone()));
     let user_registration_token_repo = Arc::new(UserRegistrationTokenInMemoryImpl::new());
@@ -67,18 +70,28 @@ fn create_app_context(pool: &Pool<Sqlite>) -> Result<AppContext, Box<dyn Error>>
 }
 
 fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
-    let jwt_secret = read_secret("VIA_ALIAS_JWT_SECRET")
-        .or_else(|_| env::var("VIA_ALIAS_JWT_SECRET"))
-        .map_err(|_| "VIA_ALIAS_JWT_SECRET is not set")?;
+    const JWT_SECRET_ENV: &str = "VIA_ALIAS_JWT_SECRET";
+    const JWT_TTL: &str = "VIA_ALIAS_JWT_TTL";
+    const PORT_ENV: &str = "VIA_ALIAS_PORT";
+    const DB_LOC_ENV: &str = "VIA_ALIAS_DB";
+    let jwt_secret = read_secret(JWT_SECRET_ENV)
+        .or_else(|_| env::var(JWT_SECRET_ENV))
+        .map_err(|_| format!("{JWT_SECRET_ENV} is not set"))?;
 
-    let port: u16 = env::var("VIA_ALIAS_PORT")
+    let port: u16 = env::var(PORT_ENV)
         .unwrap_or_else(|_| "6789".to_owned())
         .parse()
-        .map_err(|_| "VIA_ALIAS_PORT is not a valid port number")?;
-    let jwt_ttl = env::var("VIA_ALIAS_JWT_TTL")
+        .map_err(|_| format!("{PORT_ENV} is not a valid port number"))?;
+
+    let jwt_ttl = env::var(JWT_TTL)
         .unwrap_or_else(|_| "900".to_owned())
         .parse()
-        .map_err(|_| "VIA_ALIAS_JWT_TTL is not a valid value")?;
+        .map_err(|_| format!("{JWT_TTL} is not a valid value"))?;
+
+    let db_location = env::var(DB_LOC_ENV)
+        .unwrap_or_else(|_| "via-alias.db".to_owned())
+        .parse()
+        .map_err(|_| format!("{DB_LOC_ENV} is not a valid value"))?;
 
     let jwt_config = JwtConfig {
         jwt_secret,
@@ -86,7 +99,11 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
         jwt_ttl,
     };
 
-    Ok(AppConfig { port, jwt_config })
+    Ok(AppConfig {
+        port,
+        jwt_config,
+        db_location,
+    })
 }
 
 fn read_secret(name: &str) -> Result<String, std::io::Error> {
@@ -102,16 +119,15 @@ async fn main() {
 
 async fn run_app() -> Result<(), Box<dyn Error>> {
     println!("Starting Via-Alias");
-    let db_file_env = env::var("VIA_ALIAS_DB");
-    let db_file = db_file_env.unwrap_or_else(|_| "via-alias.db".to_string());
-    if !sqlx::Sqlite::database_exists(&db_file).await? {
-        sqlx::Sqlite::create_database(&db_file).await?;
+    let app_config = generate_app_config()?;
+    if !sqlx::Sqlite::database_exists(&app_config.db_location).await? {
+        sqlx::Sqlite::create_database(&app_config.db_location).await?;
     }
-    let pool = sqlx::sqlite::SqlitePool::connect(&db_file).await?;
+    let pool = sqlx::sqlite::SqlitePool::connect(&app_config.db_location).await?;
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
-    let app_state = create_app_context(&pool)?;
+    let app_state = create_app_context(&pool, app_config)?;
     app_state.user_service.create_admin_first_start().await?;
 
     let port = app_state.app_config.port;
