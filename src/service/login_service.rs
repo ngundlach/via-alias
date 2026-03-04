@@ -21,17 +21,18 @@ impl LoginServiceImpl {
     pub fn new(user_repo: Arc<dyn UserRepo + Send + Sync>) -> Self {
         LoginServiceImpl { repo: user_repo }
     }
-    fn expiration_time(dur: Duration) -> usize {
+    fn expiration_time(dur: Duration) -> u64 {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("system clock is before Unix epoch")
             .checked_add(dur)
             .expect("timestamp overflow")
-            .as_secs() as usize
+            .as_secs()
     }
 
     fn create_token(user: &User, jwt_config: &JwtConfig) -> Result<UserTokenDTO, DbServiceError> {
-        let expiration_time = Self::expiration_time(Duration::from_mins(15));
+        let exp_sec = 15;
+        let expiration_time = Self::expiration_time(Duration::from_mins(exp_sec));
         let user_claims = UserClaimsDTO {
             user_id: user.id.clone(),
             is_admin: user.is_admin,
@@ -49,7 +50,7 @@ impl LoginServiceImpl {
 
         let user_token = UserTokenDTO {
             access_token: format!("{}.{}.{}", token.protected, token.payload, token.signature),
-            expires_in: expiration_time,
+            expires_in: Duration::from_mins(exp_sec).as_secs(),
             // refresh_token: Uuid::new_v4().to_string(),
             token_type: "Bearer".to_string(),
         };

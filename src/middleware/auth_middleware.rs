@@ -15,15 +15,12 @@ pub(crate) async fn auth_middleware(
     mut request: Request,
     next: Next,
 ) -> impl IntoResponse {
-    let token_data = match validate_bearer_token::<UserClaimsDTO>(
-        &headers,
-        &app_context.app_config.jwt_config,
-    ) {
-        Ok(x) => x,
-        Err(_) => {
-            return StatusCode::UNAUTHORIZED.into_response();
-        }
+    let Ok(token_data) =
+        validate_bearer_token::<UserClaimsDTO>(&headers, &app_context.app_config.jwt_config)
+    else {
+        return StatusCode::UNAUTHORIZED.into_response();
     };
+
     request.extensions_mut().insert(token_data.claims);
 
     next.run(request).await
@@ -88,24 +85,51 @@ mod tests {
         }
     }
 
-    fn create_test_user_claims() -> UserClaimsDTO {
+    fn create_test_user_claims(exp_timestamp: u64) -> UserClaimsDTO {
+        UserClaimsDTO {
+            user_id: "1234".to_owned(),
+            is_admin: false,
+            exp: exp_timestamp,
+            jti: "5678".to_owned(),
+        }
+    }
+
+    fn create_expired_jwt() -> (String, UserClaimsDTO) {
+        let expiration_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock is before Unix epoch")
+            .checked_sub(Duration::from_mins(15))
+            .expect("timestamp overflow")
+            .as_secs();
+
+        let user_claims = create_test_user_claims(expiration_time);
+        let jwt_config = test_jwt_config();
+        let jwt_header = Header::new(jwt_config.jwt_alg);
+        let jwt_token = encode(
+            &jwt_header,
+            Some(&user_claims),
+            &EncodingKey::from_secret(jwt_config.jwt_secret.as_bytes()),
+        )
+        .unwrap();
+
+        (
+            format!(
+                "{}.{}.{}",
+                jwt_token.protected, jwt_token.payload, jwt_token.signature,
+            ),
+            user_claims,
+        )
+    }
+
+    fn create_valid_jwt() -> (String, UserClaimsDTO) {
         let expiration_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("system clock is before Unix epoch")
             .checked_add(Duration::from_mins(15))
             .expect("timestamp overflow")
-            .as_secs() as usize;
+            .as_secs();
 
-        UserClaimsDTO {
-            user_id: "1234".to_owned(),
-            is_admin: false,
-            exp: expiration_time,
-            jti: "5678".to_owned(),
-        }
-    }
-
-    fn create_valid_jwt() -> (String, UserClaimsDTO) {
-        let user_claims = create_test_user_claims();
+        let user_claims = create_test_user_claims(expiration_time);
         let jwt_config = test_jwt_config();
         let jwt_header = Header::new(jwt_config.jwt_alg);
         let jwt_token = encode(
@@ -127,6 +151,15 @@ mod tests {
     fn create_auth_header_with_valid_bearer_token() -> (HeaderMap, String, UserClaimsDTO) {
         let mut header = HeaderMap::new();
         let (jwt, user_claims) = create_valid_jwt();
+        let bearer = format!("Bearer {}", jwt);
+        let header_val = HeaderValue::from_str(bearer.as_str()).unwrap();
+        header.append("authorization", header_val);
+        (header, jwt, user_claims)
+    }
+
+    fn create_auth_header_with_expired_bearer_token() -> (HeaderMap, String, UserClaimsDTO) {
+        let mut header = HeaderMap::new();
+        let (jwt, user_claims) = create_expired_jwt();
         let bearer = format!("Bearer {}", jwt);
         let header_val = HeaderValue::from_str(bearer.as_str()).unwrap();
         header.append("authorization", header_val);
@@ -164,5 +197,12 @@ mod tests {
         dbg!(claims.as_ref().err());
         assert!(claims.is_ok());
         assert_eq!(claims.unwrap().claims, expected_claims)
+    }
+
+    #[test]
+    fn test_validate_token_with_expired_jwt_fails() {
+        let (header, _, _) = create_auth_header_with_expired_bearer_token();
+        let claims = validate_bearer_token::<UserClaimsDTO>(&header, &test_jwt_config());
+        assert!(claims.is_err());
     }
 }
