@@ -41,6 +41,20 @@ impl UserRegistrationTokenInMemoryImpl {
             })),
         }
     }
+    fn remove_from_store(guard: &mut TokenStore, token: &str) -> Result<(), DbServiceError> {
+        let (_, token_data) = guard
+            .tokens
+            .remove_entry(token)
+            .ok_or(DbServiceError::NotFoundError)?;
+
+        if let Some(token_bucket) = guard.expirations.get_mut(&token_data.exp_at) {
+            token_bucket.remove(&token_data.registration_token);
+            if token_bucket.is_empty() {
+                guard.expirations.remove(&token_data.exp_at);
+            }
+        }
+        Ok(())
+    }
 
     pub(crate) fn start_cleanup(self: &Arc<Self>, cleanup_interval: Duration) {
         let repo = self.clone();
@@ -118,38 +132,26 @@ impl UserRegistrationTokenRepo for UserRegistrationTokenInMemoryImpl {
 
     async fn read_token(&self, token_str: &str) -> Result<UserRegistrationToken, DbServiceError> {
         let token = {
-            let guard = self.token_store.read().await;
+            let mut guard = self.token_store.write().await;
 
             let token = guard
                 .tokens
                 .get(token_str)
-                .ok_or(DbServiceError::NotFoundError)?;
-            token.clone()
-        };
-        if validate_registration_token(&token).is_err() {
-            let _ = self
-                .delete_user_registration_token(&token.registration_token)
-                .await;
-            return Err(DbServiceError::TokenInvalid);
-        }
+                .ok_or(DbServiceError::NotFoundError)?
+                .clone();
 
+            if validate_registration_token(&token).is_err() {
+                Self::remove_from_store(&mut guard, &token.registration_token)?;
+                return Err(DbServiceError::TokenInvalid);
+            }
+            token
+        };
         Ok(token)
     }
 
     async fn delete_user_registration_token(&self, token: &str) -> Result<(), DbServiceError> {
         let mut guard = self.token_store.write().await;
-        let (_, token_data) = guard
-            .tokens
-            .remove_entry(token)
-            .ok_or(DbServiceError::NotFoundError)?;
-
-        if let Some(token_bucket) = guard.expirations.get_mut(&token_data.exp_at) {
-            token_bucket.remove(&token_data.registration_token);
-            if token_bucket.is_empty() {
-                guard.expirations.remove(&token_data.exp_at);
-            }
-        }
-        Ok(())
+        Self::remove_from_store(&mut guard, &token)
     }
 }
 
