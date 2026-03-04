@@ -1,3 +1,15 @@
+#![forbid(unsafe_code)]
+#![deny(clippy::correctness)]
+#![deny(clippy::suspicious)]
+#![deny(clippy::complexity)]
+#![deny(clippy::perf)]
+#![warn(clippy::style)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::panic)]
+#![deny(clippy::todo)]
+#![deny(clippy::unimplemented)]
+#![cfg_attr(test, allow(clippy::unwrap_used))]
+
 mod controller;
 mod data;
 mod middleware;
