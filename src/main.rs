@@ -35,7 +35,7 @@ struct JwtConfig {
     jwt_alg: jsonwebtoken::Algorithm,
 }
 
-fn create_app_contenxt(pool: &Pool<Sqlite>) -> Result<AppContext, Box<dyn Error>> {
+fn create_app_context(pool: &Pool<Sqlite>) -> Result<AppContext, Box<dyn Error>> {
     let app_config = generate_app_config()?;
     let redirect_repo = Arc::new(RedirectRepoSqliteImpl::new(pool.clone()));
     let user_repo = Arc::new(UserRepoSqliteImpl::new(pool.clone()));
@@ -93,7 +93,7 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
-    let app_state = create_app_contenxt(&pool)?;
+    let app_state = create_app_context(&pool)?;
     app_state.user_service.create_admin_first_start().await?;
 
     let port = app_state.app_config.port;
