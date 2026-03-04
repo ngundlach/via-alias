@@ -45,6 +45,7 @@ struct AppConfig {
 struct JwtConfig {
     jwt_secret: String,
     jwt_alg: jsonwebtoken::Algorithm,
+    jwt_ttl: u64,
 }
 
 fn create_app_context(pool: &Pool<Sqlite>) -> Result<AppContext, Box<dyn Error>> {
@@ -74,10 +75,15 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
         .unwrap_or_else(|_| "6789".to_owned())
         .parse()
         .map_err(|_| "VIA_ALIAS_PORT is not a valid port number")?;
+    let jwt_ttl = env::var("VIA_ALIAS_JWT_TTL")
+        .unwrap_or_else(|_| "900".to_owned())
+        .parse()
+        .map_err(|_| "VIA_ALIAS_JWT_TTL is not a valid value")?;
 
     let jwt_config = JwtConfig {
         jwt_secret,
         jwt_alg: jsonwebtoken::Algorithm::HS512,
+        jwt_ttl,
     };
 
     Ok(AppConfig { port, jwt_config })

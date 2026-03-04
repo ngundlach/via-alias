@@ -82,6 +82,7 @@ mod tests {
         JwtConfig {
             jwt_secret: "super_secure_test_secret".to_owned(),
             jwt_alg: jsonwebtoken::Algorithm::HS512,
+            jwt_ttl: 900,
         }
     }
 
