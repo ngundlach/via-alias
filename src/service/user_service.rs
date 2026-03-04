@@ -145,7 +145,7 @@ impl UserService for UserServiceImpl {
         let changed_user = self.user_repo.update_user_by_id(&user_data).await?;
 
         if changed_user < 1 {
-            return Err(DbServiceError::DatabaseError("".to_owned()));
+            return Err(DbServiceError::NotFoundError);
         }
         Ok(())
     }
