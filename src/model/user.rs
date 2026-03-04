@@ -36,7 +36,7 @@ pub struct UserPasswordChangeDTO {
 #[derive(Default, Deserialize, Serialize, Debug)]
 pub struct UserTokenDTO {
     pub access_token: String,
-    pub refresh_token: String,
+    // pub refresh_token: String,
     pub token_type: String,
     pub expires_in: usize,
 }

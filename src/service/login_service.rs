@@ -50,7 +50,7 @@ impl LoginServiceImpl {
         let user_token = UserTokenDTO {
             access_token: format!("{}.{}.{}", token.protected, token.payload, token.signature),
             expires_in: expiration_time,
-            refresh_token: Uuid::new_v4().to_string(),
+            // refresh_token: Uuid::new_v4().to_string(),
             token_type: "Bearer".to_string(),
         };
         Ok(user_token)
