@@ -102,8 +102,8 @@ pub(crate) fn validate_registration_token(
 mod test {
     use crate::service::PayloadValidator;
 
-    #[tokio::test]
-    async fn not_empty_fails() {
+    #[test]
+    fn not_empty_fails() {
         let result = PayloadValidator::new("").not_empty().validate();
         assert!(result.is_err());
         let err = result.unwrap_err();
