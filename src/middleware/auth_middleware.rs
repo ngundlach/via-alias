@@ -1,4 +1,5 @@
 use axum::{
+    Extension,
     extract::{Request, State},
     http::{HeaderMap, StatusCode},
     middleware::Next,
@@ -25,6 +26,16 @@ pub(crate) async fn auth_middleware(
     };
     request.extensions_mut().insert(token_data.claims);
 
+    next.run(request).await
+}
+pub(crate) async fn is_admin_middleware(
+    Extension(user_claims): Extension<UserClaimsDTO>,
+    request: Request,
+    next: Next,
+) -> impl IntoResponse {
+    if !user_claims.is_admin {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
     next.run(request).await
 }
 
