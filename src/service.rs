@@ -27,8 +27,7 @@ pub trait RedirectService {
         user_id: &str,
     ) -> Result<RedirectListDTO, DbServiceError>;
     async fn delete_redirect(&self, alias: &str) -> Result<(), DbServiceError>;
-    async fn delete_user_redirect(&self, alias: &str, uwser_id: &str)
-    -> Result<(), DbServiceError>;
+    async fn delete_user_redirect(&self, alias: &str, user_id: &str) -> Result<(), DbServiceError>;
     async fn update_redirect(
         &self,
         alias: &str,
