@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Deserialize, Serialize, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[derive(Default, sqlx::FromRow, Debug, Clone, PartialEq)]
 pub struct User {
     pub id: String,
     pub name: String,
@@ -54,14 +54,14 @@ pub struct UserRegistrationTokenDTO {
     pub registration_token: String,
 }
 
-#[derive(Default, Deserialize, Serialize, Debug)]
+#[derive(Default, Deserialize, Debug)]
 pub struct UserRegistrationDTO {
     pub name: String,
     pub pw: String,
     pub token: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Hash, Eq)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub struct UserRegistrationToken {
     pub registration_token: String,
     pub exp_at: u64,
