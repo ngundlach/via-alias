@@ -5,12 +5,12 @@ mod model;
 mod service;
 use axum::{Router, http::StatusCode, routing::get};
 use sqlx::{Pool, Sqlite, migrate::MigrateDatabase};
-use std::{env, error::Error, fs::read_to_string, net::SocketAddr, sync::Arc};
+use std::{env, error::Error, fs::read_to_string, net::SocketAddr, sync::Arc, time::Duration};
 use tokio::signal;
 
 use crate::{
     controller::{login, redirect, user},
-    data::{RedirectRepoSqliteImpl, UserRepoSqliteImpl},
+    data::{RedirectRepoSqliteImpl, UserRegistrationTokenInMemoryImpl, UserRepoSqliteImpl},
     service::{
         LoginService, LoginServiceImpl, RedirectService, RedirectServiceImpl, UserService,
         UserServiceImpl,
@@ -39,8 +39,10 @@ fn create_app_contenxt(pool: &Pool<Sqlite>) -> Result<AppContext, Box<dyn Error>
     let app_config = generate_app_config()?;
     let redirect_repo = Arc::new(RedirectRepoSqliteImpl::new(pool.clone()));
     let user_repo = Arc::new(UserRepoSqliteImpl::new(pool.clone()));
+    let user_registration_token_repo = Arc::new(UserRegistrationTokenInMemoryImpl::new());
+    user_registration_token_repo.start_cleanup(Duration::from_hours(1));
     let redirect_service = RedirectServiceImpl::new(redirect_repo);
-    let user_service = UserServiceImpl::new(user_repo.clone());
+    let user_service = UserServiceImpl::new(user_repo.clone(), user_registration_token_repo);
     let login_service = LoginServiceImpl::new(user_repo);
     let app_context = AppContext {
         redirect_service: Arc::new(redirect_service),
@@ -97,11 +99,12 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
     let port = app_state.app_config.port;
     let app = Router::new()
         .merge(redirect::router())
-        .merge(user::user_management_router())
+        .merge(user::protected_user_management_router())
         .layer(axum::middleware::from_fn_with_state(
             app_state.clone(),
             middleware::auth_middleware,
         ))
+        .merge(user::user_management_router())
         .merge(login::router())
         .route("/{alias}", get(redirect::get_redirect_handler))
         .route("/healthcheck", get(|| async { StatusCode::OK }))
