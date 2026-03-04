@@ -166,7 +166,7 @@ mod tests {
             .unwrap();
     }
     async fn insert_user_into_test_db(user: &User, pool: &SqlitePool) {
-        sqlx::query("INSERT INTO users (id, name, pwhash, is_admin) VALUES ($1, $2, $3, $5);")
+        sqlx::query("INSERT INTO users (id, name, pwhash, is_admin) VALUES ($1, $2, $3, $4);")
             .bind(&user.id)
             .bind(&user.name)
             .bind(&user.pwhash)
