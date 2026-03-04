@@ -31,8 +31,7 @@ impl LoginServiceImpl {
     }
 
     fn create_token(user: &User, jwt_config: &JwtConfig) -> Result<UserTokenDTO, DbServiceError> {
-        let exp_sec = 15;
-        let expiration_time = Self::expiration_time(Duration::from_mins(exp_sec));
+        let expiration_time = Self::expiration_time(Duration::from_secs(jwt_config.jwt_ttl));
         let user_claims = UserClaimsDTO {
             user_id: user.id.clone(),
             is_admin: user.is_admin,
@@ -50,16 +49,13 @@ impl LoginServiceImpl {
 
         let user_token = UserTokenDTO {
             access_token: format!("{}.{}.{}", token.protected, token.payload, token.signature),
-            expires_in: Duration::from_mins(exp_sec).as_secs(),
+            expires_in: jwt_config.jwt_ttl,
             // refresh_token: Uuid::new_v4().to_string(),
             token_type: "Bearer".to_string(),
         };
         Ok(user_token)
     }
-}
 
-#[async_trait]
-impl LoginService for LoginServiceImpl {
     async fn get_user_data(&self, user: &UserCredentialsDTO) -> Result<User, DbServiceError> {
         let user_data = self
             .repo
@@ -68,7 +64,10 @@ impl LoginService for LoginServiceImpl {
             .map_err(DbServiceError::from)?;
         Ok(user_data)
     }
+}
 
+#[async_trait]
+impl LoginService for LoginServiceImpl {
     async fn login_user(
         &self,
         user: &UserCredentialsDTO,
