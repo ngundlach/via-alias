@@ -31,7 +31,7 @@ pub(crate) async fn is_admin_middleware(
     next: Next,
 ) -> impl IntoResponse {
     if !user_claims.is_admin {
-        return StatusCode::UNAUTHORIZED.into_response();
+        return StatusCode::FORBIDDEN.into_response();
     }
     next.run(request).await
 }
