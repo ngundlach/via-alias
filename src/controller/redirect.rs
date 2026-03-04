@@ -42,7 +42,7 @@ async fn delete_redirect_handler(
         .delete_user_redirect(&alias, &user_claims.user_id)
         .await;
     match query {
-        Ok(_) => StatusCode::NO_CONTENT,
+        Ok(()) => StatusCode::NO_CONTENT,
         Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
@@ -75,7 +75,7 @@ async fn create_redirect_handler(
         .create_redirect(&redirect_creation)
         .await;
     match query {
-        Ok(_) => (StatusCode::CREATED, Json(payload)).into_response(),
+        Ok(()) => (StatusCode::CREATED, Json(payload)).into_response(),
         Err(DbServiceError::PayloadValidationError(s, e)) => ValidationErrorResponse {
             on_item: s,
             errors: e,

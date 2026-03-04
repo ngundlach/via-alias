@@ -15,16 +15,16 @@ impl fmt::Display for DbServiceError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             DbServiceError::NotFoundError => write!(f, "Resource not found"),
-            DbServiceError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
+            DbServiceError::DatabaseError(msg) => write!(f, "Database error: {msg}"),
             DbServiceError::PayloadValidationError(s, items) => {
                 let formatted_vec = items
                     .iter()
-                    .map(|e| format!("[{}]", e))
+                    .map(|e| format!("[{e}]"))
                     .collect::<Vec<String>>()
                     .join(", ");
                 write!(f, "Validation Error in {s}: {formatted_vec}")
             }
-            DbServiceError::AuthError(msg) => write!(f, "Auth error: {}", msg),
+            DbServiceError::AuthError(msg) => write!(f, "Auth error: {msg}"),
             DbServiceError::TokenInvalid => write!(f, "Token is invalid"),
         }
     }

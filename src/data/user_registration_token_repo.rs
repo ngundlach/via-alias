@@ -67,7 +67,7 @@ impl UserRegistrationTokenInMemoryImpl {
                     _ = timer.tick() => {
                          repo.delete_expired_tokens().await;
                      }
-                     _ = cancel_token.cancelled() => {
+                     () = cancel_token.cancelled() => {
                          break;
                      }
                 }
@@ -151,7 +151,7 @@ impl UserRegistrationTokenRepo for UserRegistrationTokenInMemoryImpl {
 
     async fn delete_user_registration_token(&self, token: &str) -> Result<(), DbServiceError> {
         let mut guard = self.token_store.write().await;
-        Self::remove_from_store(&mut guard, &token)
+        Self::remove_from_store(&mut guard, token)
     }
 }
 

@@ -72,13 +72,13 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
 }
 
 fn read_secret(name: &str) -> Result<String, std::io::Error> {
-    read_to_string(format!("/run/secrets/{}", name)).map(|s| s.trim().to_string())
+    read_to_string(format!("/run/secrets/{name}")).map(|s| s.trim().to_string())
 }
 
 #[tokio::main]
 async fn main() {
     if let Err(e) = run_app().await {
-        eprintln!("Via-Alias encountered an error: {}", e);
+        eprintln!("Via-Alias encountered an error: {e}");
     }
 }
 
@@ -113,7 +113,7 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = tokio::net::TcpListener::bind(&addr).await?;
-    println!("Listening on port {}...", port);
+    println!("Listening on port {port}...");
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
@@ -142,7 +142,7 @@ async fn shutdown_signal() {
     let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = ctrl_c => {println!("\nReceived ctrl+c event")},
-        _ = terminate => {println!("Received termination signal")},
+        () = ctrl_c => {println!("\nReceived ctrl+c event")},
+        () = terminate => {println!("Received termination signal")},
     }
 }

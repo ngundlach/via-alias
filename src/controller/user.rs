@@ -1,5 +1,5 @@
 use axum::{
-    Extension, Json, Router, debug_handler,
+    Extension, Json, Router,
     extract::State,
     http::StatusCode,
     response::IntoResponse,
@@ -37,14 +37,13 @@ async fn change_user_password_handler(
         .change_user_pw(&password_change)
         .await;
     match res {
-        Ok(_) => StatusCode::OK,
+        Ok(()) => StatusCode::OK,
         Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND,
         Err(DbServiceError::AuthError(_)) => StatusCode::UNAUTHORIZED,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
 
-#[debug_handler]
 async fn register_user_handler(
     State(app_content): State<AppContext>,
     Json(payload): Json<UserRegistrationDTO>,

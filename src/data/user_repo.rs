@@ -122,7 +122,7 @@ mod tests {
             .bind(&user.id)
             .bind(&user.name)
             .bind(&user.pwhash)
-            .bind(&user.is_admin)
+            .bind(user.is_admin)
             .execute(pool)
             .await
             .unwrap();
