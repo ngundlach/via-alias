@@ -14,7 +14,8 @@ pub struct PayloadValidator<'a> {
 
 impl<'a> PayloadValidator<'a> {
     const ERR_EMPTY: &'static str = "can not be empty";
-    const ERR_ALPHANUMERIC: &'static str = "allowed characters are alphanumeric and hyphens";
+    const ERR_ALPHANUMERIC: &'static str =
+        "allowed characters are alphanumeric, hyphens and underscores";
     const ERR_MAX_LENGTH: &'static str = "max length is";
     const ERR_URL_SCHEMA: &'static str =
         "has to start with 'http://' or 'https://' and can not contain any whitespaces";
