@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[derive(sqlx::FromRow, Debug, PartialEq, Clone)]
 pub struct User {
     pub id: String,
     pub name: String,
@@ -17,29 +17,29 @@ impl From<User> for UserDTO {
         }
     }
 }
-#[derive(Default, Deserialize, Serialize, Debug)]
+#[derive(Serialize, Debug)]
 pub struct UserDTO {
     pub id: String,
     pub name: String,
     pub is_admin: bool,
 }
 
-#[derive(Default, Deserialize, Serialize, Debug)]
+#[derive(Serialize)]
 pub struct DeletedUserDTO {
     pub user_id: String,
     pub deleted: DeletedUserResourceDTO,
 }
 
-#[derive(Default, Deserialize, Serialize, Debug)]
+#[derive(Serialize)]
 pub struct DeletedUserResourceDTO {
     pub redirects: u64,
 }
-#[derive(Default, Deserialize, Serialize, Debug)]
+#[derive(Serialize)]
 pub struct UserListDTO {
     pub users: Vec<UserDTO>,
 }
 
-#[derive(Default, Deserialize, Serialize, Debug)]
+#[derive(Serialize)]
 pub struct SimpleUserDTO {
     pub id: String,
     pub name: String,
@@ -63,7 +63,7 @@ impl From<UserDTO> for SimpleUserDTO {
     }
 }
 
-#[derive(Default, Deserialize, Serialize, Debug)]
+#[derive(Deserialize)]
 pub struct UserCredentialsDTO {
     pub name: String,
     pub pw: String,
@@ -81,7 +81,7 @@ pub struct UserPasswordChangeDTO {
     pub pw: PasswordChangeDataDTO,
 }
 
-#[derive(Default, Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct UserTokenDTO {
     pub access_token: String,
     // pub refresh_token: String,
@@ -102,7 +102,7 @@ pub struct UserRegistrationTokenDTO {
     pub registration_token: String,
 }
 
-#[derive(Default, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct UserRegistrationDTO {
     pub name: String,
     pub pw: String,
