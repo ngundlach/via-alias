@@ -59,8 +59,8 @@ fn validate_bearer_token<C: serde::de::DeserializeOwned>(
 
     decode(
         token,
-        &DecodingKey::from_secret(jwt_config.jwt_secret.as_bytes()),
-        &Validation::new(jwt_config.jwt_alg),
+        &DecodingKey::from_secret(jwt_config.secret.as_bytes()),
+        &Validation::new(jwt_config.alg),
     )
 }
 
@@ -80,9 +80,9 @@ mod tests {
 
     fn test_jwt_config() -> JwtConfig {
         JwtConfig {
-            jwt_secret: "super_secure_test_secret".to_owned(),
-            jwt_alg: jsonwebtoken::Algorithm::HS512,
-            jwt_ttl: 900,
+            secret: "super_secure_test_secret".to_owned(),
+            alg: jsonwebtoken::Algorithm::HS512,
+            ttl: 900,
         }
     }
 
@@ -105,11 +105,11 @@ mod tests {
 
         let user_claims = create_test_user_claims(expiration_time);
         let jwt_config = test_jwt_config();
-        let jwt_header = Header::new(jwt_config.jwt_alg);
+        let jwt_header = Header::new(jwt_config.alg);
         let jwt_token = encode(
             &jwt_header,
             Some(&user_claims),
-            &EncodingKey::from_secret(jwt_config.jwt_secret.as_bytes()),
+            &EncodingKey::from_secret(jwt_config.secret.as_bytes()),
         )
         .unwrap();
 
@@ -132,11 +132,11 @@ mod tests {
 
         let user_claims = create_test_user_claims(expiration_time);
         let jwt_config = test_jwt_config();
-        let jwt_header = Header::new(jwt_config.jwt_alg);
+        let jwt_header = Header::new(jwt_config.alg);
         let jwt_token = encode(
             &jwt_header,
             Some(&user_claims),
-            &EncodingKey::from_secret(jwt_config.jwt_secret.as_bytes()),
+            &EncodingKey::from_secret(jwt_config.secret.as_bytes()),
         )
         .unwrap();
 

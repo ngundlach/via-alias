@@ -31,7 +31,7 @@ impl LoginServiceImpl {
     }
 
     fn create_token(user: &User, jwt_config: &JwtConfig) -> Result<UserTokenDTO, DbServiceError> {
-        let expiration_time = Self::expiration_time(Duration::from_secs(jwt_config.jwt_ttl));
+        let expiration_time = Self::expiration_time(Duration::from_secs(jwt_config.ttl));
         let user_claims = UserClaimsDTO {
             user_id: user.id.clone(),
             is_admin: user.is_admin,
@@ -39,17 +39,17 @@ impl LoginServiceImpl {
             jti: Uuid::new_v4().to_string(),
         };
 
-        let header = Header::new(jwt_config.jwt_alg);
+        let header = Header::new(jwt_config.alg);
         let token = encode(
             &header,
             Some(&user_claims),
-            &EncodingKey::from_secret(jwt_config.jwt_secret.as_bytes()),
+            &EncodingKey::from_secret(jwt_config.secret.as_bytes()),
         )
         .map_err(|_| DbServiceError::AuthError("Error during token creation".to_owned()))?;
 
         let user_token = UserTokenDTO {
             access_token: format!("{}.{}.{}", token.protected, token.payload, token.signature),
-            expires_in: jwt_config.jwt_ttl,
+            expires_in: jwt_config.ttl,
             // refresh_token: Uuid::new_v4().to_string(),
             token_type: "Bearer".to_string(),
         };

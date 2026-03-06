@@ -44,15 +44,12 @@ struct AppConfig {
 }
 #[derive(Clone)]
 struct JwtConfig {
-    jwt_secret: String,
-    jwt_alg: jsonwebtoken::Algorithm,
-    jwt_ttl: u64,
+    secret: String,
+    alg: jsonwebtoken::Algorithm,
+    ttl: u64,
 }
 
-fn create_app_context(
-    pool: &Pool<Sqlite>,
-    app_config: AppConfig,
-) -> Result<AppContext, Box<dyn Error>> {
+fn create_app_context(pool: &Pool<Sqlite>, app_config: AppConfig) -> AppContext {
     let redirect_repo = Arc::new(RedirectRepoSqliteImpl::new(pool.clone()));
     let user_repo = Arc::new(UserRepoSqliteImpl::new(pool.clone()));
     let user_registration_token_repo = Arc::new(UserRegistrationTokenInMemoryImpl::new());
@@ -60,13 +57,12 @@ fn create_app_context(
     let redirect_service = RedirectServiceImpl::new(redirect_repo);
     let user_service = UserServiceImpl::new(user_repo.clone(), user_registration_token_repo);
     let login_service = LoginServiceImpl::new(user_repo);
-    let app_context = AppContext {
+    AppContext {
         redirect_service: Arc::new(redirect_service),
         login_service: Arc::new(login_service),
         user_service: Arc::new(user_service),
         app_config,
-    };
-    Ok(app_context)
+    }
 }
 
 fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
@@ -74,7 +70,7 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
     const JWT_TTL: &str = "VIA_ALIAS_JWT_TTL";
     const PORT_ENV: &str = "VIA_ALIAS_PORT";
     const DB_LOC_ENV: &str = "VIA_ALIAS_DB";
-    let jwt_secret = read_secret(JWT_SECRET_ENV)
+    let secret = read_secret(JWT_SECRET_ENV)
         .or_else(|_| env::var(JWT_SECRET_ENV))
         .map_err(|_| format!("{JWT_SECRET_ENV} is not set"))?;
 
@@ -83,7 +79,7 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
         .parse()
         .map_err(|_| format!("{PORT_ENV} is not a valid port number"))?;
 
-    let jwt_ttl = env::var(JWT_TTL)
+    let ttl = env::var(JWT_TTL)
         .unwrap_or_else(|_| "900".to_owned())
         .parse()
         .map_err(|_| format!("{JWT_TTL} is not a valid value"))?;
@@ -94,15 +90,15 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
         .map_err(|_| format!("{DB_LOC_ENV} is not a valid value"))?;
 
     let jwt_config = JwtConfig {
-        jwt_secret,
-        jwt_alg: jsonwebtoken::Algorithm::HS512,
-        jwt_ttl,
+        secret,
+        alg: jsonwebtoken::Algorithm::HS512,
+        ttl,
     };
 
     Ok(AppConfig {
         port,
-        jwt_config,
         db_location,
+        jwt_config,
     })
 }
 
@@ -127,7 +123,7 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
-    let app_state = create_app_context(&pool, app_config)?;
+    let app_state = create_app_context(&pool, app_config);
     app_state.user_service.create_admin_first_start().await?;
 
     let port = app_state.app_config.port;
@@ -139,7 +135,7 @@ async fn run_app() -> Result<(), Box<dyn Error>> {
             app_state.clone(),
             middleware::auth_middleware,
         ))
-        .merge(user::user_management_router())
+        .merge(user::user_router())
         .merge(login::router())
         .route("/{alias}", get(redirect::get_redirect_handler))
         .route("/healthcheck", get(|| async { StatusCode::OK }))

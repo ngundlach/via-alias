@@ -19,7 +19,7 @@ pub(crate) fn protected_user_management_router() -> Router<AppContext> {
     Router::new().route("/api/users/password", patch(change_user_password_handler))
 }
 
-pub(crate) fn user_management_router() -> Router<AppContext> {
+pub(crate) fn user_router() -> Router<AppContext> {
     Router::new().route("/api/users/register", post(register_user_handler))
 }
 
