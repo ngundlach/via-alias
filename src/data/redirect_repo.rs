@@ -19,10 +19,12 @@ impl RedirectRepoSqliteImpl {
 #[async_trait]
 impl RedirectRepo for RedirectRepoSqliteImpl {
     async fn read_redirect_by_alias(&self, alias: &str) -> Result<Redirect, sqlx::Error> {
-        sqlx::query_as::<_, Redirect>("SELECT * FROM redirects WHERE alias = $1;")
-            .bind(alias)
-            .fetch_one(&self.db)
-            .await
+        sqlx::query_as::<_, Redirect>(
+            "SELECT id, alias, url, owner FROM redirects WHERE alias = $1;",
+        )
+        .bind(alias)
+        .fetch_one(&self.db)
+        .await
     }
 
     async fn create_redirect(&self, redirect: &Redirect) -> Result<(), sqlx::Error> {
@@ -37,9 +39,10 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
     }
 
     async fn read_all_redirects(&self) -> Result<Vec<Redirect>, sqlx::Error> {
-        let redirects = sqlx::query_as::<_, Redirect>("SELECT * FROM redirects;")
-            .fetch_all(&self.db)
-            .await?;
+        let redirects =
+            sqlx::query_as::<_, Redirect>("SELECT id, alias, url, owner FROM redirects;")
+                .fetch_all(&self.db)
+                .await?;
         Ok(redirects)
     }
 
@@ -47,10 +50,12 @@ impl RedirectRepo for RedirectRepoSqliteImpl {
         &self,
         user_id: &str,
     ) -> Result<Vec<Redirect>, sqlx::Error> {
-        let redirects = sqlx::query_as::<_, Redirect>("SELECT * FROM redirects WHERE owner = $1;")
-            .bind(user_id)
-            .fetch_all(&self.db)
-            .await?;
+        let redirects = sqlx::query_as::<_, Redirect>(
+            "SELECT id, alias, url, owner FROM redirects WHERE owner = $1;",
+        )
+        .bind(user_id)
+        .fetch_all(&self.db)
+        .await?;
         Ok(redirects)
     }
 
