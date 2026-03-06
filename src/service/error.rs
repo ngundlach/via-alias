@@ -11,6 +11,12 @@ pub enum DbServiceError {
     TokenInvalid,
 }
 
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ValidationErrorResponse {
+    pub(crate) on_item: String,
+    pub(crate) errors: Vec<String>,
+}
+
 impl fmt::Display for DbServiceError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

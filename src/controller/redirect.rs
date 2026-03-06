@@ -5,19 +5,14 @@ use axum::{
     response::{IntoResponse, Redirect},
     routing::{delete, get, patch, post},
 };
-use serde::{Deserialize, Serialize};
 
 use crate::{
     AppContext,
     model::{RedirectCreationDTO, RedirectDTO, UserClaimsDTO},
+    service::ValidationErrorResponse,
 };
 use crate::{model::UpdateUrlDTO, service::DbServiceError};
 
-#[derive(Serialize, Deserialize)]
-struct ValidationErrorResponse {
-    on_item: String,
-    errors: Vec<String>,
-}
 impl IntoResponse for ValidationErrorResponse {
     fn into_response(self) -> axum::response::Response {
         (StatusCode::BAD_REQUEST, Json(self)).into_response()
