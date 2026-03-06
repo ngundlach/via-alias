@@ -79,7 +79,6 @@ async fn all_users_info_admin_handler(State(app_context): State<AppContext>) -> 
     let res = app_context.user_service.get_all_users_info().await;
     match res {
         Ok(user) => (StatusCode::OK, Json(user)).into_response(),
-        Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND.into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response(),
     }
 }
