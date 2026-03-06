@@ -1,5 +1,10 @@
 use std::fmt;
 
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -8,6 +13,7 @@ pub enum DbServiceError {
     DatabaseError(String),
     PayloadValidationError(String, Vec<String>),
     AuthError(String),
+    PermissionError(String),
     TokenInvalid,
 }
 
@@ -32,10 +38,28 @@ impl fmt::Display for DbServiceError {
             }
             DbServiceError::AuthError(msg) => write!(f, "Auth error: {msg}"),
             DbServiceError::TokenInvalid => write!(f, "Token is invalid"),
+            DbServiceError::PermissionError(msg) => write!(f, "Permission error: {msg}"),
         }
     }
 }
-
+impl IntoResponse for DbServiceError {
+    fn into_response(self) -> Response {
+        match self {
+            DbServiceError::NotFoundError => StatusCode::NOT_FOUND.into_response(),
+            DbServiceError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            DbServiceError::PayloadValidationError(s, e) => {
+                let errors = ValidationErrorResponse {
+                    on_item: s,
+                    errors: e,
+                };
+                (StatusCode::BAD_REQUEST, Json(errors)).into_response()
+            }
+            DbServiceError::AuthError(_) => StatusCode::UNAUTHORIZED.into_response(),
+            DbServiceError::PermissionError(_) => StatusCode::FORBIDDEN.into_response(),
+            DbServiceError::TokenInvalid => StatusCode::FORBIDDEN.into_response(),
+        }
+    }
+}
 impl std::error::Error for DbServiceError {}
 
 impl From<sqlx::Error> for DbServiceError {
