@@ -207,7 +207,7 @@ impl UserService for UserServiceImpl {
             .read_user_by_id(&password_change.user_id)
             .await?;
 
-        validator::check_user_credentials(
+        validator::validate_user_credentials(
             &UserCredentialsDTO {
                 name: user_data.name.clone(),
                 pw: password_change.pw.old_pw.clone(),

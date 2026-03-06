@@ -74,7 +74,7 @@ impl LoginService for LoginServiceImpl {
         jwt_config: &JwtConfig,
     ) -> Result<UserTokenDTO, DbServiceError> {
         let user_data = self.get_user_data(user).await?;
-        validator::check_user_credentials(user, &user_data)?;
+        validator::validate_user_credentials(user, &user_data)?;
         let jwt = Self::create_token(&user_data, jwt_config)?;
         Ok(jwt)
     }

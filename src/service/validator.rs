@@ -114,7 +114,7 @@ impl<'a> PayloadValidator<'a> {
     }
 }
 
-pub(crate) fn check_user_credentials(
+pub(crate) fn validate_user_credentials(
     user: &UserCredentialsDTO,
     user_data: &User,
 ) -> Result<(), DbServiceError> {
