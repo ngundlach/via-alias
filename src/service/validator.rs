@@ -24,6 +24,7 @@ impl<'a> PayloadValidator<'a> {
     const ERR_AT_LEAST_ONE_NUMERIC: &'static str = "must contain at least one numeric characters";
     const ERR_AT_LEAST_ONE_ALPHABETIC: &'static str =
         "must contain at least one alphabetic characters";
+    const ERR_RESTRICTED: &'static str = " is restricted";
     pub fn new(value: &'a str) -> Self {
         PayloadValidator {
             value,
@@ -103,6 +104,14 @@ impl<'a> PayloadValidator<'a> {
                 self.errors.push(Self::ERR_URL_SCHEMA.to_owned());
                 break;
             }
+        }
+        self
+    }
+    pub fn restricted(mut self, restricted_str: &str) -> Self {
+        if self.value.eq(restricted_str) {
+            let mut err = String::from(restricted_str);
+            err.push_str(Self::ERR_RESTRICTED);
+            self.errors.push(err);
         }
         self
     }
@@ -289,6 +298,19 @@ mod test {
         let err = result.unwrap_err();
         assert_eq!(err.len(), 1);
         assert_eq!(err[0], PayloadValidator::ERR_URL_SCHEMA)
+    }
+    #[test]
+    fn restricted_fails() {
+        let result = PayloadValidator::new("rest").restricted("rest").validate();
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.len(), 1);
+        assert_eq!(err[0], format!("rest{}", PayloadValidator::ERR_RESTRICTED))
+    }
+    #[test]
+    fn restricted_succeeds() {
+        let result = PayloadValidator::new("rest").restricted("resto").validate();
+        assert!(result.is_ok());
     }
     #[test]
     fn validation_combination_fails() {
