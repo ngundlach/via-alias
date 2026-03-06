@@ -42,14 +42,14 @@ async fn change_user_password_handler(
 }
 
 async fn register_user_handler(
-    State(app_content): State<AppContext>,
+    State(app_context): State<AppContext>,
     Json(payload): Json<UserRegistrationDTO>,
 ) -> Result<impl IntoResponse, DbServiceError> {
     let user_credentials = UserCredentialsDTO {
         name: payload.name,
         pw: payload.pw,
     };
-    let res = app_content
+    let res = app_context
         .user_service
         .register_user_with_token(&user_credentials, &payload.token)
         .await?;
