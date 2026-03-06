@@ -17,7 +17,7 @@ use crate::{
         DeletedUserDTO, DeletedUserResourceDTO, SimpleUserDTO, User, UserCredentialsDTO, UserDTO,
         UserListDTO, UserPasswordChangeDTO, UserRegistrationTokenDTO,
     },
-    service::{DbServiceError, UserService, validator},
+    service::{DbServiceError, PayloadValidator, UserService, validator},
 };
 
 pub struct UserServiceImpl {
@@ -34,6 +34,28 @@ impl UserServiceImpl {
             user_repo,
             user_registration_token_repo,
         }
+    }
+
+    fn validate_user_name(user_name: &str) -> Result<(), DbServiceError> {
+        PayloadValidator::new(user_name)
+            .not_empty()
+            .min_length(3)
+            .max_length(15)
+            .valid_characters()
+            .validate()
+            .map_err(|e| DbServiceError::PayloadValidationError("name".to_string(), e))
+    }
+
+    fn validate_password(pw: &str) -> Result<(), DbServiceError> {
+        PayloadValidator::new(pw)
+            .not_empty()
+            .min_length(12)
+            .max_length(100)
+            .valid_characters()
+            .one_alphabetic()
+            .one_numeric()
+            .validate()
+            .map_err(|e| DbServiceError::PayloadValidationError("password".to_string(), e))
     }
 
     fn create_password_hash_string(user_password: &str) -> Result<String, Error> {
@@ -59,20 +81,27 @@ impl UserServiceImpl {
 
 #[async_trait]
 impl UserService for UserServiceImpl {
-    async fn register_user(
+    async fn register_user(&self, user: &UserCredentialsDTO) -> Result<UserDTO, DbServiceError> {
+        Self::validate_user_name(&user.name)?;
+        Self::validate_password(&user.pw)?;
+        let new_user =
+            Self::create_user(user).map_err(|e| DbServiceError::DatabaseError(e.to_string()))?;
+
+        let created_user = self.user_repo.create_user(&new_user).await?;
+        Ok(created_user.into())
+    }
+
+    async fn register_user_with_token(
         &self,
         user: &UserCredentialsDTO,
         registration_token: &str,
-    ) -> Result<UserDTO, DbServiceError> {
+    ) -> Result<SimpleUserDTO, DbServiceError> {
         let token = self
             .user_registration_token_repo
             .read_token(registration_token)
             .await?;
 
-        let new_user =
-            Self::create_user(user).map_err(|e| DbServiceError::DatabaseError(e.to_string()))?;
-
-        let created_user = self.user_repo.create_user(&new_user).await?;
+        let created_user = self.register_user(user).await?;
 
         self.user_registration_token_repo
             .delete_user_registration_token(&token.registration_token)
@@ -98,12 +127,12 @@ impl UserService for UserServiceImpl {
     }
 
     async fn get_user_info(&self, user_id: &str) -> Result<UserDTO, DbServiceError> {
-        let user = self.user_repo.read_user_by_id(&user_id).await?;
+        let user = self.user_repo.read_user_by_id(user_id).await?;
         Ok(user.into())
     }
 
     async fn get_simple_user_info(&self, user_id: &str) -> Result<SimpleUserDTO, DbServiceError> {
-        let user = self.user_repo.read_user_by_id(&user_id).await?;
+        let user = self.user_repo.read_user_by_id(user_id).await?;
         Ok(user.into())
     }
 

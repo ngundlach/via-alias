@@ -11,7 +11,7 @@ use crate::model::{
     UserDTO, UserListDTO, UserPasswordChangeDTO, UserRegistrationTokenDTO, UserTokenDTO,
 };
 pub(crate) use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
-pub use crate::service::error::DbServiceError;
+pub use crate::service::error::*;
 pub use crate::service::login_service::LoginServiceImpl;
 pub use crate::service::redirect_service::RedirectServiceImpl;
 pub use crate::service::user_service::UserServiceImpl;
@@ -39,11 +39,12 @@ pub trait RedirectService {
 
 #[async_trait]
 pub trait UserService {
-    async fn register_user(
+    async fn register_user(&self, user: &UserCredentialsDTO) -> Result<UserDTO, DbServiceError>;
+    async fn register_user_with_token(
         &self,
         user: &UserCredentialsDTO,
         registration_token: &str,
-    ) -> Result<UserDTO, DbServiceError>;
+    ) -> Result<SimpleUserDTO, DbServiceError>;
     async fn register_user_as_admin(
         &self,
         user: &UserCredentialsDTO,
