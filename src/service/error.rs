@@ -15,6 +15,7 @@ pub enum DbServiceError {
     AuthError(String),
     PermissionError(String),
     TokenInvalid,
+    ResourceConflict,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -39,6 +40,7 @@ impl fmt::Display for DbServiceError {
             DbServiceError::AuthError(msg) => write!(f, "Auth error: {msg}"),
             DbServiceError::TokenInvalid => write!(f, "Token is invalid"),
             DbServiceError::PermissionError(msg) => write!(f, "Permission error: {msg}"),
+            DbServiceError::ResourceConflict => write!(f, "Resource already exists"),
         }
     }
 }
@@ -57,6 +59,7 @@ impl IntoResponse for DbServiceError {
             DbServiceError::AuthError(_) => StatusCode::UNAUTHORIZED.into_response(),
             DbServiceError::PermissionError(_) => StatusCode::FORBIDDEN.into_response(),
             DbServiceError::TokenInvalid => StatusCode::FORBIDDEN.into_response(),
+            DbServiceError::ResourceConflict => StatusCode::CONFLICT.into_response(),
         }
     }
 }
@@ -66,6 +69,13 @@ impl From<sqlx::Error> for DbServiceError {
     fn from(err: sqlx::Error) -> Self {
         match err {
             sqlx::Error::RowNotFound => DbServiceError::NotFoundError,
+            sqlx::Error::Database(e) => {
+                if e.is_unique_violation() {
+                    DbServiceError::ResourceConflict
+                } else {
+                    DbServiceError::DatabaseError(e.to_string())
+                }
+            }
             _ => DbServiceError::DatabaseError(err.to_string()),
         }
     }

@@ -107,7 +107,7 @@ impl RedirectService for RedirectServiceImpl {
             .map_err(DbServiceError::from)?;
         if res == 0 {
             self.repo.read_redirect_by_alias(alias).await?;
-            return Err(DbServiceError::AuthError(
+            return Err(DbServiceError::PermissionError(
                 "User is not authorized to delete redirect".to_owned(),
             ));
         }
@@ -128,7 +128,7 @@ impl RedirectService for RedirectServiceImpl {
             .map_err(DbServiceError::from)?;
         if res == 0 {
             self.repo.read_redirect_by_alias(alias).await?;
-            return Err(DbServiceError::AuthError(
+            return Err(DbServiceError::PermissionError(
                 "User is not authorized to update redirect".to_owned(),
             ));
         }
