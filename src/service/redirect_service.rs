@@ -24,6 +24,8 @@ impl RedirectServiceImpl {
             .not_empty()
             .max_length(50)
             .valid_characters()
+            .restricted("api")
+            .restricted("healthcheck")
             .validate()
             .map_err(|e| DbServiceError::PayloadValidationError("alias".to_string(), e))
     }
