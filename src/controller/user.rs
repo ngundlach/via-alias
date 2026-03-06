@@ -3,7 +3,7 @@ use axum::{
     extract::State,
     http::StatusCode,
     response::IntoResponse,
-    routing::{patch, post},
+    routing::{get, patch, post},
 };
 
 use crate::{
@@ -16,7 +16,9 @@ use crate::{
 };
 
 pub(crate) fn protected_user_management_router() -> Router<AppContext> {
-    Router::new().route("/api/users/password", patch(change_user_password_handler))
+    Router::new()
+        .route("/api/users/password", patch(change_user_password_handler))
+        .route("/api/users/info", get(simple_user_info_handler))
 }
 
 pub(crate) fn user_router() -> Router<AppContext> {
@@ -60,5 +62,20 @@ async fn register_user_handler(
         Ok(_) => StatusCode::OK,
         Err(DbServiceError::AuthError(_)) => StatusCode::UNAUTHORIZED,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
+}
+
+async fn simple_user_info_handler(
+    State(app_context): State<AppContext>,
+    Extension(user_claims): Extension<UserClaimsDTO>,
+) -> impl IntoResponse {
+    let res = app_context
+        .user_service
+        .get_simple_user_info(&user_claims.user_id)
+        .await;
+    match res {
+        Ok(user) => (StatusCode::OK, Json(user)).into_response(),
+        Err(DbServiceError::AuthError(_)) => StatusCode::UNAUTHORIZED.into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
