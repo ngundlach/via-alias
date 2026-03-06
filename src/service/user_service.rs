@@ -74,7 +74,7 @@ impl UserService for UserServiceImpl {
         self.user_registration_token_repo
             .delete_user_registration_token(&token.registration_token)
             .await?;
-        Ok(created_user)
+        Ok(created_user.into())
     }
 
     async fn register_user_as_admin(
@@ -86,10 +86,12 @@ impl UserService for UserServiceImpl {
 
         new_admin.is_admin = true;
 
-        self.user_repo
+        let user = self
+            .user_repo
             .create_user(&new_admin)
             .await
-            .map_err(DbServiceError::from)
+            .map_err(DbServiceError::from)?;
+        Ok(user.into())
     }
 
     async fn get_admin_count(&self) -> Result<i64, DbServiceError> {

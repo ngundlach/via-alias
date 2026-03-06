@@ -1,10 +1,7 @@
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 
-use crate::{
-    data::UserRepo,
-    model::{User, UserDTO},
-};
+use crate::{data::UserRepo, model::User};
 
 pub struct UserRepoSqliteImpl {
     db: Pool<Sqlite>,
@@ -32,7 +29,7 @@ impl UserRepo for UserRepoSqliteImpl {
             .await
     }
 
-    async fn create_user(&self, user: &User) -> Result<UserDTO, sqlx::Error> {
+    async fn create_user(&self, user: &User) -> Result<User, sqlx::Error> {
         sqlx::query("INSERT INTO users (id, name, pwhash, is_admin) VALUES ($1, $2, $3, $4);")
             .bind(&user.id)
             .bind(&user.name)
@@ -40,11 +37,7 @@ impl UserRepo for UserRepoSqliteImpl {
             .bind(user.is_admin)
             .execute(&self.db)
             .await?;
-        Ok(UserDTO {
-            id: user.id.clone(),
-            name: user.name.clone(),
-            is_admin: user.is_admin,
-        })
+        Ok(user.clone())
     }
 
     async fn count_user_with_is_admin(&self) -> Result<i64, sqlx::Error> {

@@ -8,6 +8,15 @@ pub struct User {
     pub is_admin: bool,
 }
 
+impl From<User> for UserDTO {
+    fn from(value: User) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            is_admin: value.is_admin,
+        }
+    }
+}
 #[derive(Default, Deserialize, Serialize, Debug)]
 pub struct UserDTO {
     pub id: String,

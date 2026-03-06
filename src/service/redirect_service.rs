@@ -1,10 +1,14 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use uuid::Uuid;
 
 use crate::{
     data::RedirectRepo,
-    model::{RedirectCreationDTO, RedirectDTO, RedirectListDTO, UpdateUrlDTO},
+    model::{
+        FullRedirectListDTO, Redirect, RedirectCreationDTO, RedirectDTO, RedirectListDTO,
+        UpdateUrlDTO,
+    },
     service::{PayloadValidator, RedirectService, error::DbServiceError},
 };
 
@@ -37,19 +41,37 @@ impl RedirectServiceImpl {
 #[async_trait]
 impl RedirectService for RedirectServiceImpl {
     async fn get_redirect(&self, alias: &str) -> Result<RedirectDTO, DbServiceError> {
-        self.repo
+        let result = self
+            .repo
             .read_redirect_by_alias(alias)
             .await
-            .map_err(DbServiceError::from)
+            .map_err(DbServiceError::from)?;
+        Ok(result.into())
     }
 
     async fn create_redirect(&self, redirect: &RedirectCreationDTO) -> Result<(), DbServiceError> {
         RedirectServiceImpl::validate_alias(&redirect.redirect.alias)?;
         RedirectServiceImpl::validate_url(&redirect.redirect.url)?;
+        let redirect = Redirect {
+            id: Uuid::new_v4().to_string(),
+            alias: redirect.redirect.alias.clone(),
+            url: redirect.redirect.url.clone(),
+            owner: redirect.owner.clone(),
+        };
+
         self.repo
-            .create_redirect(redirect)
+            .create_redirect(&redirect)
             .await
             .map_err(DbServiceError::from)
+    }
+
+    async fn get_all_redirects(&self) -> Result<FullRedirectListDTO, DbServiceError> {
+        let redirects = self
+            .repo
+            .read_all_redirects()
+            .await
+            .map_err(DbServiceError::from)?;
+        Ok(FullRedirectListDTO { redirects })
     }
 
     async fn get_all_user_redirects(
@@ -60,13 +82,15 @@ impl RedirectService for RedirectServiceImpl {
             .read_all_redirects_by_user_id(user_id)
             .await
             .map_err(DbServiceError::from)
-            .map(|r| RedirectListDTO { redirects: r })
+            .map(|r| RedirectListDTO {
+                redirects: r.into_iter().map(std::convert::Into::into).collect(),
+            })
     }
 
-    async fn delete_redirect(&self, alias: &str) -> Result<(), DbServiceError> {
+    async fn delete_redirect_by_id(&self, id: &str) -> Result<(), DbServiceError> {
         let res = self
             .repo
-            .delete_redirect_by_alias(alias)
+            .delete_redirect_by_id(id)
             .await
             .map_err(DbServiceError::from)?;
         if res == 0 {
