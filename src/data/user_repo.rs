@@ -71,7 +71,7 @@ impl UserRepo for UserRepoSqliteImpl {
     async fn delete_user_by_id(&self, user_id: &str) -> Result<DeletedResources, UserRepoError> {
         let mut tx = self.db.begin().await?;
         let is_admin: bool = sqlx::query_scalar("SELECT is_admin FROM users where id = $1;")
-            .bind(&user_id)
+            .bind(user_id)
             .fetch_one(&mut *tx)
             .await?;
 
