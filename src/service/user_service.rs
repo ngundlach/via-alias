@@ -153,7 +153,7 @@ impl UserService for UserServiceImpl {
             .await
             .map_err(|e| match e {
                 UserRepoError::IsAdmin => {
-                    DbServiceError::DatabaseError("User is admin".to_string())
+                    DbServiceError::PermissionError("User is admin".to_string())
                 }
                 UserRepoError::Db(e) => DbServiceError::DatabaseError(e.to_string()),
             })?;
