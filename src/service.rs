@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use crate::JwtConfig;
 use crate::model::{
     FullRedirectListDTO, RedirectCreationDTO, SimpleUserDTO, UserCredentialsDTO, UserDTO,
-    UserPasswordChangeDTO, UserRegistrationTokenDTO, UserTokenDTO,
+    UserListDTO, UserPasswordChangeDTO, UserRegistrationTokenDTO, UserTokenDTO,
 };
 pub(crate) use crate::model::{RedirectDTO, RedirectListDTO, UpdateUrlDTO};
 pub use crate::service::error::DbServiceError;
@@ -51,6 +51,7 @@ pub trait UserService {
     async fn get_admin_count(&self) -> Result<i64, DbServiceError>;
     async fn get_simple_user_info(&self, user_id: &str) -> Result<SimpleUserDTO, DbServiceError>;
     async fn get_user_info(&self, user_id: &str) -> Result<UserDTO, DbServiceError>;
+    async fn get_all_users_info(&self) -> Result<UserListDTO, DbServiceError>;
     async fn create_admin_first_start(&self) -> Result<(), DbServiceError>;
     async fn change_user_pw(
         &self,

@@ -25,6 +25,11 @@ pub struct UserDTO {
 }
 
 #[derive(Default, Deserialize, Serialize, Debug)]
+pub struct UserListDTO {
+    pub users: Vec<UserDTO>,
+}
+
+#[derive(Default, Deserialize, Serialize, Debug)]
 pub struct SimpleUserDTO {
     pub id: String,
     pub name: String,

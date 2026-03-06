@@ -29,6 +29,12 @@ impl UserRepo for UserRepoSqliteImpl {
             .await
     }
 
+    async fn read_users(&self) -> Result<Vec<User>, sqlx::Error> {
+        sqlx::query_as::<_, User>("SELECT id, name, pwhash, is_admin FROM users;")
+            .fetch_all(&self.db)
+            .await
+    }
+
     async fn create_user(&self, user: &User) -> Result<User, sqlx::Error> {
         sqlx::query("INSERT INTO users (id, name, pwhash, is_admin) VALUES ($1, $2, $3, $4);")
             .bind(&user.id)
@@ -199,6 +205,19 @@ mod tests {
         dbg!(count.as_ref().err());
         assert!(count.is_ok());
         assert_eq!(count.unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_read_users_should_return_list() {
+        let pool = setup_test_db().await;
+        let repo = UserRepoSqliteImpl::new(pool.clone());
+
+        let users = seed_test_db(&pool).await;
+
+        let result = repo.read_users().await;
+        dbg!(result.as_ref().err());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), users);
     }
 
     #[tokio::test]
