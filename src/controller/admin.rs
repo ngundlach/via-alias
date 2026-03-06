@@ -19,6 +19,7 @@ pub(crate) fn router() -> Router<AppContext> {
             "/api/admin/redirects/{id}",
             delete(delete_redirect_admin_handler),
         )
+        .route("/api/admin/users/{id}", get(user_info_admin_handler))
         .layer(axum::middleware::from_fn(middleware::is_admin_middleware))
 }
 
@@ -56,6 +57,19 @@ async fn delete_redirect_admin_handler(
     match query {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND.into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response(),
+    }
+}
+
+async fn user_info_admin_handler(
+    State(app_context): State<AppContext>,
+    Path(user_id): Path<String>,
+) -> impl IntoResponse {
+    let res = app_context.user_service.get_user_info(&user_id).await;
+    match res {
+        Ok(user) => (StatusCode::OK, Json(user)).into_response(),
+        Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND.into_response(),
+        Err(DbServiceError::AuthError(e)) => (StatusCode::UNAUTHORIZED, Json(e)).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(e)).into_response(),
     }
 }
