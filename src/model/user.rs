@@ -25,6 +25,21 @@ pub struct UserDTO {
 }
 
 #[derive(Default, Deserialize, Serialize, Debug)]
+pub struct SimpleUserDTO {
+    pub id: String,
+    pub name: String,
+}
+
+impl From<User> for SimpleUserDTO {
+    fn from(value: User) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+        }
+    }
+}
+
+#[derive(Default, Deserialize, Serialize, Debug)]
 pub struct UserCredentialsDTO {
     pub name: String,
     pub pw: String,

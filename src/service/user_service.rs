@@ -13,7 +13,10 @@ use uuid::Uuid;
 
 use crate::{
     data::{UserRegistrationTokenRepo, UserRepo},
-    model::{User, UserCredentialsDTO, UserDTO, UserPasswordChangeDTO, UserRegistrationTokenDTO},
+    model::{
+        SimpleUserDTO, User, UserCredentialsDTO, UserDTO, UserPasswordChangeDTO,
+        UserRegistrationTokenDTO,
+    },
     service::{DbServiceError, UserService, validator},
 };
 
@@ -91,6 +94,16 @@ impl UserService for UserServiceImpl {
             .create_user(&new_admin)
             .await
             .map_err(DbServiceError::from)?;
+        Ok(user.into())
+    }
+
+    async fn get_user_info(&self, user_id: &str) -> Result<UserDTO, DbServiceError> {
+        let user = self.user_repo.read_user_by_id(&user_id).await?;
+        Ok(user.into())
+    }
+
+    async fn get_simple_user_info(&self, user_id: &str) -> Result<SimpleUserDTO, DbServiceError> {
+        let user = self.user_repo.read_user_by_id(&user_id).await?;
         Ok(user.into())
     }
 
