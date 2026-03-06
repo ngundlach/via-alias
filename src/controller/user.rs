@@ -12,7 +12,7 @@ use crate::{
         PasswordChangeDataDTO, UserClaimsDTO, UserCredentialsDTO, UserPasswordChangeDTO,
         UserRegistrationDTO,
     },
-    service::DbServiceError,
+    service::{DbServiceError, ValidationErrorResponse},
 };
 
 pub(crate) fn protected_user_management_router() -> Router<AppContext> {
@@ -56,12 +56,17 @@ async fn register_user_handler(
     };
     let res = app_content
         .user_service
-        .register_user(&user_credentials, &payload.token)
+        .register_user_with_token(&user_credentials, &payload.token)
         .await;
     match res {
-        Ok(_) => StatusCode::OK,
-        Err(DbServiceError::AuthError(_)) => StatusCode::UNAUTHORIZED,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        Ok(e) => (StatusCode::CREATED, Json(e)).into_response(),
+        Err(DbServiceError::AuthError(_)) => StatusCode::UNAUTHORIZED.into_response(),
+        Err(DbServiceError::PayloadValidationError(s, e)) => ValidationErrorResponse {
+            on_item: s,
+            errors: e,
+        }
+        .into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 
