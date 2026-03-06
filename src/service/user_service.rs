@@ -214,7 +214,7 @@ impl UserService for UserServiceImpl {
             },
             &user_data,
         )?;
-
+        Self::validate_password(&password_change.pw.new_pw)?;
         let mut user_data = user_data;
         user_data.pwhash = Self::create_password_hash_string(&password_change.pw.new_pw)
             .map_err(|e| DbServiceError::DatabaseError(e.to_string()))?;

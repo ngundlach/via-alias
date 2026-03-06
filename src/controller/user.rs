@@ -39,10 +39,15 @@ async fn change_user_password_handler(
         .change_user_pw(&password_change)
         .await;
     match res {
-        Ok(()) => StatusCode::OK,
-        Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND,
-        Err(DbServiceError::AuthError(_)) => StatusCode::UNAUTHORIZED,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        Ok(()) => StatusCode::OK.into_response(),
+        Err(DbServiceError::NotFoundError) => StatusCode::NOT_FOUND.into_response(),
+        Err(DbServiceError::AuthError(_)) => StatusCode::UNAUTHORIZED.into_response(),
+        Err(DbServiceError::PayloadValidationError(s, e)) => ValidationErrorResponse {
+            on_item: s,
+            errors: e,
+        }
+        .into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 
