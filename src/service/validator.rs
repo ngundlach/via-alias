@@ -16,10 +16,14 @@ impl<'a> PayloadValidator<'a> {
     const ERR_EMPTY: &'static str = "can not be empty";
     const ERR_ALPHANUMERIC: &'static str =
         "allowed characters are alphanumeric, hyphens and underscores";
-    const ERR_MAX_LENGTH: &'static str = "max length is";
+    const ERR_MAX_LENGTH: &'static str = "max length is ";
+    const ERR_MIN_LENGTH: &'static str = "min length is ";
     const ERR_URL_SCHEMA: &'static str =
         "has to start with 'http://' or 'https://' and can not contain any whitespaces";
-
+    const ERR_REQUIRED_CHAR: &'static str = "must contain the following character: ";
+    const ERR_AT_LEAST_ONE_NUMERIC: &'static str = "must contain at least one numeric characters";
+    const ERR_AT_LEAST_ONE_ALPHABETIC: &'static str =
+        "must contain at least one alphabetic characters";
     pub fn new(value: &'a str) -> Self {
         PayloadValidator {
             value,
@@ -33,10 +37,18 @@ impl<'a> PayloadValidator<'a> {
         }
         self
     }
+
+    pub fn min_length(mut self, length: usize) -> Self {
+        if self.value.len() < length {
+            let mut err = String::from(Self::ERR_MIN_LENGTH);
+            err.push_str(&length.to_string());
+            self.errors.push(err);
+        }
+        self
+    }
     pub fn max_length(mut self, length: usize) -> Self {
         if self.value.len() > length {
             let mut err = String::from(Self::ERR_MAX_LENGTH);
-            err.push(' ');
             err.push_str(&length.to_string());
             self.errors.push(err);
         }
@@ -50,6 +62,35 @@ impl<'a> PayloadValidator<'a> {
         {
             self.errors.push(Self::ERR_ALPHANUMERIC.to_owned());
         }
+        self
+    }
+    pub fn one_numeric(mut self) -> Self {
+        if self.value.chars().any(|c| c.is_ascii_digit()) {
+            return self;
+        }
+
+        self.errors.push(Self::ERR_AT_LEAST_ONE_NUMERIC.to_owned());
+        self
+    }
+    pub fn one_alphabetic(mut self) -> Self {
+        if self.value.chars().any(|c| c.is_ascii_alphabetic()) {
+            return self;
+        }
+
+        self.errors
+            .push(Self::ERR_AT_LEAST_ONE_ALPHABETIC.to_owned());
+        self
+    }
+    #[allow(unused)]
+    pub fn required_character(mut self, required: char) -> Self {
+        if self.value.chars().any(|c| c == required) {
+            return self;
+        }
+
+        let mut err = String::from(Self::ERR_REQUIRED_CHAR);
+        err.push(required);
+
+        self.errors.push(err);
         self
     }
     pub fn has_url_schema(mut self) -> Self {
@@ -101,6 +142,7 @@ pub(crate) fn validate_registration_token(
 
 #[cfg(test)]
 mod test {
+
     use crate::service::PayloadValidator;
 
     #[test]
@@ -117,13 +159,28 @@ mod test {
         assert!(result.is_ok());
     }
     #[test]
+    fn min_length_fails() {
+        let len = 5;
+        let result = PayloadValidator::new("som").min_length(len).validate();
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.len(), 1);
+        let expected_err_msg = format!("{}{len}", PayloadValidator::ERR_MIN_LENGTH);
+        assert_eq!(err[0], expected_err_msg);
+    }
+    #[test]
+    fn min_length_succeeds() {
+        let result = PayloadValidator::new("sometext").min_length(2).validate();
+        assert!(result.is_ok());
+    }
+    #[test]
     fn max_length_fails() {
         let len = 5;
         let result = PayloadValidator::new("sometext").max_length(len).validate();
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.len(), 1);
-        let expected_err_msg = format!("{} {len}", PayloadValidator::ERR_MAX_LENGTH);
+        let expected_err_msg = format!("{}{len}", PayloadValidator::ERR_MAX_LENGTH);
         assert_eq!(err[0], expected_err_msg);
     }
     #[test]
@@ -145,6 +202,57 @@ mod test {
     fn valid_characters_succeeds() {
         let result = PayloadValidator::new("-abcdefghijklmnopqrstuv-wxyz0123456789-")
             .valid_characters()
+            .validate();
+        assert!(result.is_ok());
+    }
+    #[test]
+    fn one_alphabetic_succeeds() {
+        let result = PayloadValidator::new("ab1c").one_alphabetic().validate();
+        assert!(result.is_ok());
+    }
+    #[test]
+    fn one_alphabetic_fails() {
+        let result = PayloadValidator::new("123").one_alphabetic().validate();
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.len(), 1);
+        assert!(err.contains(&format!(
+            "{}",
+            PayloadValidator::ERR_AT_LEAST_ONE_ALPHABETIC
+        )));
+    }
+    #[test]
+    fn one_numeric_succeeds() {
+        let result = PayloadValidator::new("ab1c").one_numeric().validate();
+        assert!(result.is_ok());
+    }
+    #[test]
+    fn one_numeric_fails() {
+        let result = PayloadValidator::new("abc").one_numeric().validate();
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.len(), 1);
+        assert!(err.contains(&format!("{}", PayloadValidator::ERR_AT_LEAST_ONE_NUMERIC)));
+    }
+    #[test]
+    fn required_character_fails() {
+        let result = PayloadValidator::new("abc")
+            .required_character('c')
+            .required_character('f')
+            .required_character('a')
+            .required_character('z')
+            .validate();
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.len(), 2);
+        dbg!(&err);
+        assert!(err.contains(&format!("{}f", PayloadValidator::ERR_REQUIRED_CHAR)));
+        assert!(err.contains(&format!("{}z", PayloadValidator::ERR_REQUIRED_CHAR)));
+    }
+    #[test]
+    fn required_characters_succeeds() {
+        let result = PayloadValidator::new("abc")
+            .required_character('a')
             .validate();
         assert!(result.is_ok());
     }
@@ -195,7 +303,7 @@ mod test {
         assert_eq!(err.len(), 2);
         let expected_errors = [
             PayloadValidator::ERR_ALPHANUMERIC.to_owned(),
-            format!("{} {len}", PayloadValidator::ERR_MAX_LENGTH),
+            format!("{}{len}", PayloadValidator::ERR_MAX_LENGTH),
         ];
         expected_errors
             .iter()
