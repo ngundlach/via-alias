@@ -12,10 +12,10 @@ use base64::{Engine, engine::general_purpose};
 use uuid::Uuid;
 
 use crate::{
-    data::{UserRegistrationTokenRepo, UserRepo},
+    data::{UserRegistrationTokenRepo, UserRepo, UserRepoError},
     model::{
-        SimpleUserDTO, User, UserCredentialsDTO, UserDTO, UserListDTO, UserPasswordChangeDTO,
-        UserRegistrationTokenDTO,
+        DeletedUserDTO, DeletedUserResourceDTO, SimpleUserDTO, User, UserCredentialsDTO, UserDTO,
+        UserListDTO, UserPasswordChangeDTO, UserRegistrationTokenDTO,
     },
     service::{DbServiceError, UserService, validator},
 };
@@ -117,6 +117,29 @@ impl UserService for UserServiceImpl {
             })
     }
 
+    async fn delete_user(&self, user_id: &str) -> Result<DeletedUserDTO, DbServiceError> {
+        let res = self
+            .user_repo
+            .delete_user_by_id(user_id)
+            .await
+            .map_err(|e| match e {
+                UserRepoError::IsAdmin => {
+                    DbServiceError::DatabaseError("User is admin".to_string())
+                }
+                UserRepoError::Db(e) => DbServiceError::DatabaseError(e.to_string()),
+            })?;
+
+        if res.affected_user_rows < 1 {
+            return Err(DbServiceError::NotFoundError);
+        }
+
+        Ok(DeletedUserDTO {
+            user_id: user_id.to_owned(),
+            deleted: DeletedUserResourceDTO {
+                redirects: res.affected_resources,
+            },
+        })
+    }
     async fn get_admin_count(&self) -> Result<i64, DbServiceError> {
         self.user_repo
             .count_user_with_is_admin()

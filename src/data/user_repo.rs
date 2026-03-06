@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 
-use crate::{data::UserRepo, model::User};
+use crate::{
+    data::{DeletedResources, UserRepo, UserRepoError},
+    model::User,
+};
 
 pub struct UserRepoSqliteImpl {
     db: Pool<Sqlite>,
@@ -54,14 +57,45 @@ impl UserRepo for UserRepoSqliteImpl {
     }
 
     async fn update_user_by_id(&self, user: &User) -> Result<u64, sqlx::Error> {
-        let result = sqlx::query("UPDATE users SET name=$2, is_admin=$3, pwhash = $4 WHERE id=$1;")
+        let res = sqlx::query("UPDATE users SET name=$2, is_admin=$3, pwhash = $4 WHERE id=$1;")
             .bind(&user.id)
             .bind(&user.name)
             .bind(user.is_admin)
             .bind(&user.pwhash)
             .execute(&self.db)
+            .await?
+            .rows_affected();
+        Ok(res)
+    }
+
+    async fn delete_user_by_id(&self, user_id: &str) -> Result<DeletedResources, UserRepoError> {
+        let mut tx = self.db.begin().await?;
+        let is_admin: bool = sqlx::query_scalar("SELECT is_admin FROM users where id = $1;")
+            .bind(&user_id)
+            .fetch_one(&mut *tx)
             .await?;
-        Ok(result.rows_affected())
+
+        if is_admin {
+            return Err(UserRepoError::IsAdmin);
+        }
+
+        let deleted_redirects = sqlx::query("DELETE FROM redirects WHERE owner = $1")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?
+            .rows_affected();
+
+        let deleted_users = sqlx::query("DELETE FROM users WHERE id = $1")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?
+            .rows_affected();
+
+        tx.commit().await?;
+        Ok(DeletedResources {
+            affected_user_rows: deleted_users,
+            affected_resources: deleted_redirects,
+        })
     }
 }
 
@@ -71,8 +105,8 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        data::{UserRepo, UserRepoSqliteImpl},
-        model::User,
+        data::{UserRepo, UserRepoError, UserRepoSqliteImpl},
+        model::{Redirect, User},
     };
 
     async fn setup_test_db() -> SqlitePool {
@@ -125,6 +159,24 @@ mod tests {
             .execute(pool)
             .await
             .unwrap();
+    }
+
+    async fn insert_redirect_into_test_db(redirect: &Redirect, pool: &SqlitePool) {
+        sqlx::query("INSERT INTO redirects (id, alias, url, owner) VALUES ($1, $2, $3, $4);")
+            .bind(&redirect.id)
+            .bind(&redirect.alias)
+            .bind(&redirect.url)
+            .bind(&redirect.owner)
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+
+    async fn read_redirects_from_test_db(pool: &SqlitePool) -> Vec<Redirect> {
+        sqlx::query_as::<_, Redirect>("SELECT * FROM redirects;")
+            .fetch_all(pool)
+            .await
+            .unwrap()
     }
 
     #[tokio::test]
@@ -270,5 +322,96 @@ mod tests {
         let result = repo.read_user_by_id(&Uuid::new_v4().to_string()).await;
         assert!(result.is_err());
         assert!(matches!(result, Err(sqlx::Error::RowNotFound)));
+    }
+
+    #[tokio::test]
+    async fn test_delete_user_should_delete_user_and_redirects_success() {
+        let pool = setup_test_db().await;
+        let repo = UserRepoSqliteImpl::new(pool.clone());
+
+        let users = seed_test_db(&pool).await;
+        let redirects = vec![
+            Redirect {
+                id: Uuid::new_v4().to_string(),
+                alias: "somealias".to_owned(),
+                url: "someurl".to_owned(),
+                owner: users[0].clone().id,
+            },
+            Redirect {
+                id: Uuid::new_v4().to_string(),
+                alias: "somesecondalias".to_owned(),
+                url: "somesecondurl".to_owned(),
+                owner: users[0].clone().id,
+            },
+            Redirect {
+                id: Uuid::new_v4().to_string(),
+                alias: "someotheralias".to_owned(),
+                url: "someotherurl".to_owned(),
+                owner: users[1].clone().id,
+            },
+        ];
+        for red in &redirects {
+            insert_redirect_into_test_db(red, &pool).await;
+        }
+        let redirects_from_db = read_redirects_from_test_db(&pool).await;
+        assert_eq!(redirects_from_db, redirects);
+        let res = repo.delete_user_by_id(&users[0].id).await;
+        dbg!(res.as_ref().err());
+        assert!(res.is_ok());
+        let res = res.unwrap();
+        assert_eq!(res.affected_user_rows, 1);
+        assert_eq!(res.affected_resources, 2);
+
+        let updated_redirects_from_db = read_redirects_from_test_db(&pool).await;
+        assert_eq!(updated_redirects_from_db.len(), 1);
+        assert!(updated_redirects_from_db.contains(&redirects[2]));
+    }
+
+    #[tokio::test]
+    async fn test_delete_admin_should_return_err_and_delete_nothing() {
+        let pool = setup_test_db().await;
+        let repo = UserRepoSqliteImpl::new(pool.clone());
+
+        let users = seed_test_db(&pool).await;
+        let admin = User {
+            id: Uuid::new_v4().to_string(),
+            name: "adminiman".to_owned(),
+            pwhash: "somehash".to_string(),
+            is_admin: true,
+        };
+        insert_into_test_db(admin.clone(), &pool).await;
+
+        let redirects = vec![
+            Redirect {
+                id: Uuid::new_v4().to_string(),
+                alias: "somealias".to_owned(),
+                url: "someurl".to_owned(),
+                owner: admin.clone().id,
+            },
+            Redirect {
+                id: Uuid::new_v4().to_string(),
+                alias: "somesecondalias".to_owned(),
+                url: "somesecondurl".to_owned(),
+                owner: users[0].clone().id,
+            },
+            Redirect {
+                id: Uuid::new_v4().to_string(),
+                alias: "someotheralias".to_owned(),
+                url: "someotherurl".to_owned(),
+                owner: users[1].clone().id,
+            },
+        ];
+        for red in &redirects {
+            insert_redirect_into_test_db(red, &pool).await;
+        }
+        let redirects_from_db = read_redirects_from_test_db(&pool).await;
+        assert_eq!(redirects_from_db, redirects);
+        let res = repo.delete_user_by_id(&admin.id).await;
+        assert!(res.is_err());
+        assert!(matches!(res.err().unwrap(), UserRepoError::IsAdmin));
+
+        let updated_redirects_from_db = read_redirects_from_test_db(&pool).await;
+        assert_eq!(updated_redirects_from_db.len(), 3);
+        assert_eq!(redirects, updated_redirects_from_db);
     }
 }

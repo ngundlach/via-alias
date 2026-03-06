@@ -25,6 +25,16 @@ pub struct UserDTO {
 }
 
 #[derive(Default, Deserialize, Serialize, Debug)]
+pub struct DeletedUserDTO {
+    pub user_id: String,
+    pub deleted: DeletedUserResourceDTO,
+}
+
+#[derive(Default, Deserialize, Serialize, Debug)]
+pub struct DeletedUserResourceDTO {
+    pub redirects: u64,
+}
+#[derive(Default, Deserialize, Serialize, Debug)]
 pub struct UserListDTO {
     pub users: Vec<UserDTO>,
 }

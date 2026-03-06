@@ -10,6 +10,21 @@ mod user_repo;
 pub use crate::data::redirect_repo::RedirectRepoSqliteImpl;
 pub(crate) use crate::data::user_registration_token_repo::UserRegistrationTokenInMemoryImpl;
 pub use crate::data::user_repo::UserRepoSqliteImpl;
+pub(crate) struct DeletedResources {
+    pub(crate) affected_user_rows: u64,
+    pub(crate) affected_resources: u64,
+}
+#[derive(Debug)]
+pub enum UserRepoError {
+    IsAdmin,
+    Db(sqlx::Error),
+}
+
+impl From<sqlx::Error> for UserRepoError {
+    fn from(e: sqlx::Error) -> Self {
+        Self::Db(e)
+    }
+}
 
 #[async_trait]
 pub trait RedirectRepo: Send + Sync + 'static {
@@ -44,6 +59,7 @@ pub trait UserRepo: Send + Sync + 'static {
     async fn create_user(&self, user: &User) -> Result<User, sqlx::Error>;
     async fn count_user_with_is_admin(&self) -> Result<i64, sqlx::Error>;
     async fn update_user_by_id(&self, user: &User) -> Result<u64, sqlx::Error>;
+    async fn delete_user_by_id(&self, user: &str) -> Result<DeletedResources, UserRepoError>;
 }
 
 #[async_trait]
