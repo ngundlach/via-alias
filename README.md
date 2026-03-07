@@ -4,180 +4,193 @@
 
 **Via-Alias** is a self-hosted URL shortener built with Rust. It allows you to
 create short, memorable aliases for long URLs and manage them through a REST
-API. Built with Axum and SQLite.
+API. Built with Axum and SQLite. Via-Alias supports multiple users and
+authentication via JWT access token.
 
-Via-Alias is very early stage and under active development.
-**Expect breaking changes frequently!**
+This project currently mostly serves as a platform for playing around with Rust
+and Axum, but it can theoretically be used.
 
 ## Table of Contents
 
 - [API Documentation](#api-documentation)
+- [Getting started](#getting-started)
+  - [Docker](#docker)
+  - [Docker-compose](#docker-compose)
+  - [Podman](#podman)
+- [Configuration](#configuration)
 - [Building with Docker](#building-with-docker)
 
 ---
 
 ## API Documentation
 
-## Redirects
+The OpenApi-Spec for the latest Via-Alias release is available [here](./docs/openapi.json). Via-Alias also comes with
+a Swagger-UI Endpoint at
 
-### Get All Redirects
-
-```
-GET /api/redirects
-```
-
-Returns a list of all registered redirects.
-
-**Response `200 OK`**
-
-```json
-{
-  "redirects": [
-    {
-      "alias": "gh",
-      "url": "https://github.com"
-    }
-  ]
-}
+```http
+/swagger-ui
 ```
 
 ---
 
-### Create Redirect
+## Getting started
+
+Via-Alias is intended to run inside a container, but you can also clone the
+repository and build it manually. Container images are available for tagged
+releases, or you can use the included Dockerfile to build your own container
+image. See [Building with Docker](#building-with-docker)
+
+Note that the API requires to send user credentials and JWT access tokens.
+So ideally it should run behind a reverse proxy that handles TLS termination
+for production use.
+
+Horizontal scaling is **not supported**, because Via-Alias currently relies on
+in-memory state for user registration tokens. This might change in the future.
+
+A secret for signing and verifying JWT access tokens must be provided.
+
+The following command generates 64 random bytes and outputs them as a
+Base64-encoded string:
+
+```bash
+openssl rand -base64 64
+```
+
+This can either be injected into the container via an environment variable
+or via container runtime secrets mounted as a file to `/run/secrets/VIA_ALIAS_JWT_SECRET`
+
+Via-Alias will print the initial Admin credentials to stdout on first start:
 
 ```
-POST /api/redirects
+Creating admin account...
+----------------------------------------
+name:      admin
+password:  KuELypVEA2FsvaH4qcG4+g==
+
+!!! Remember to change the password !!!
+----------------------------------------
 ```
 
-**Request Body**
+The password can and should be changed via the API-Endpoint `/api/users/password`.
+See [API Documentation](#api-documentation).
 
-```json
-{
-  "alias": "gh",
-  "url": "https://github.com"
-}
+### Docker
+
+The following command will pull the latest image from GitHub Container Registry:
+
+```bash
+docker run \
+  --volume via-alias:/via_data/via-alias \
+  --publish 6789:6789 \
+  --env VIA_ALIAS_JWT_SECRET="<your secret>" \
+  ghcr.io/ngundlach/via-alias:latest
 ```
 
-**Constraints**
+The Port is mapped to 6789 and a named volume is mounted at `/via_data/via-alias`.
+Docker only supports secrets in Swarm mode, so we will have to inject the secret
+as an environment variable.
 
-- `alias`: 1-50 characters, alphanumeric and hyphens only
-- `url`: 1-2048 characters, must start with `http://` or `https://`, no whitespace
+### docker-compose
 
-**Responses**
+Save the secret to a file:
 
-- `201 Created` — redirect created, returns the created object
-- `400 Bad Request` — invalid input
-- `500 Internal Server Error`
+```bash
+openssl rand -base64 64 > via-alias-jwt-secret
+```
 
-**`400` Response Body**
+Below is an example compose.yaml file for running the latest Via-Alias image
+from ghcr.io:
 
-```json
-{
-  "on_item": "alias",
-  "errors": ["can not be empty"]
-}
+```yaml
+services:
+  via-alias:
+    image: ghcr.io/ngundlach/via-alias:latest
+    ports:
+      - "6789:6789"
+    volumes:
+      - via-alias:/via_data/via-alias
+    secrets:
+      - VIA_ALIAS_JWT_SECRET
+
+secrets:
+  VIA_ALIAS_JWT_SECRET:
+    file: ./via-alias-jwt-secret
+
+volumes:
+  via-alias:
+```
+
+The secret is mounted as a file at `/run/secrets/VIA_ALIAS_JWT_SECRET`
+inside the container.
+
+### Podman
+
+Create the secret using Podman's secret manager:
+
+```bash
+openssl rand -base64 64 | podman secret create VIA_ALIAS_JWT_SECRET -
+
+```
+
+The following systemd unit file can be saved to `~/.config/containers/systemd/via-alias.container`:
+
+```ini
+[Unit]
+Description=Via-Alias container
+
+[Container]
+Image=ghcr.io/ngundlach/via-alias:latest
+PublishPort=6789:6789
+Volume=via-alias:/via_data/via-alias
+Secret=VIA_ALIAS_JWT_SECRET
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
+```
+
+To reload the systemd daemon and start the service:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user start via-alias
+```
+
+Container logs are available via:
+
+```bash
+journalctl --user -u via-alias -f
+
 ```
 
 ---
 
-### Update Redirect
+## Configuration
 
-```
-PATCH /api/redirects/{alias}
-```
+You can configure Via-Alias with environment variables.
 
-**Path Parameters**
+| Env                      | Description                                             | Default        |
+| ------------------------ | ------------------------------------------------------- | -------------- |
+| VIA_ALIAS_PORT[^1]       | The port Via-Alias is listening on                      | `6789`         |
+| VIA_ALIAS_DB[^2]         | Full path to the sqlite database                        | `via-alias.db` |
+| VIA_ALIAS_JWT_TTL        | Expiration time of jwt access tokens in seconds         | `900`          |
+| VIA_ALIAS_JWT_SECRET[^3] | **Required:** The secret used to sign jwt access tokens | ---            |
+| VIA_ALIAS_REG_TOKEN_TTL  | Expiration time of user registration tokens in seconds  | `1800`         |
 
-| Parameter | Description         |
-| --------- | ------------------- |
-| `alias`   | The alias to update |
+[^1]: In containerized environments, this variables should not be set. Instead, configure port mappings via the container runtime.
 
-**Request Body**
+[^2]: If using the provided images or Dockerfile, this variables should not be set.
 
-```json
-{
-  "url": "https://newurl.com"
-}
-```
-
-**Responses**
-
-- `200 OK` — returns the updated object
-- `400 Bad Request` — invalid input
-- `404 Not Found` — alias does not exist
-- `500 Internal Server Error`
-
-**`400` Response Body**
-
-```json
-{
-  "on_item": "url",
-  "errors": [
-    "has to start with 'http://' or 'https://' and can not contain any whitespaces"
-  ]
-}
-```
-
----
-
-### Delete Redirect
-
-```
-DELETE /api/redirects/{alias}
-```
-
-**Path Parameters**
-
-| Parameter | Description         |
-| --------- | ------------------- |
-| `alias`   | The alias to delete |
-
-**Responses**
-
-- `204 No Content` — redirect deleted
-- `404 Not Found` — alias does not exist
-- `500 Internal Server Error`
-
----
-
-### Follow Redirect
-
-```
-GET /{alias}
-```
-
-Redirects the client to the URL registered under the given alias.
-
-**Path Parameters**
-
-| Parameter | Description         |
-| --------- | ------------------- |
-| `alias`   | The alias to follow |
-
-**Responses**
-
-- `307 Found` — redirects to the registered URL
-- `404 Not Found` — alias does not exist
-- `500 Internal Server Error`
-
----
-
-## Health Check
-
-### Health Check
-
-```
-GET /healthcheck
-```
-
-**Response `200 OK`**
+[^3]: This variable is required. Provide it either via the `VIA_ALIAS_JWT_SECRET` environment variable or alternatively via a file at `/run/secrets/VIA_ALIAS_JWT_SECRET` injected as a secret via the container runtime.
 
 ---
 
 ## Building with Docker
 
-Building the containerimage with the provided Dockerfile will create an
-alpine-based image. The api is exposed on port `6789` and the persistent
+Building the container-image with the provided Dockerfile will create an
+alpine-based image. The API is exposed on port `6789` and the persistent
 database is stored at `/via_data/via-alias/via-alias.db`.
 
 Clone the repository:
@@ -199,9 +212,12 @@ Run the container:
 docker run \
   --volume via-alias:/via_data/via-alias \
   --publish 6789:6789 \
+  --env VIA_ALIAS_JWT_SECRET="<your secret>" \
   via-alias
 ```
 
 This will run a container based on the newly created image and create a volume
 named `via_alias` for persistence mounted to the required directory. The port is
 mapped to `6789`.
+
+---
