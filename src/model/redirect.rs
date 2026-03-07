@@ -1,20 +1,26 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-#[derive(Debug, Clone, Deserialize, Serialize, sqlx::FromRow, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, sqlx::FromRow, PartialEq, ToSchema)]
+#[schema(title = "RedirectData")]
 pub(crate) struct Redirect {
+    #[schema(example = "ea07b388-0da5-4640-b30d-2f90467a612c")]
     pub id: String,
+    #[schema(example = "gh")]
     pub alias: String,
+    #[schema(example = "http://www.github.com")]
     pub url: String,
+    #[schema(example = "7484bf63-0c9a-41af-884e-e0fea7f0bb8e")]
     pub owner: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
+#[schema(title = "FullRedirectList")]
 pub(crate) struct FullRedirectListDTO {
     pub redirects: Vec<Redirect>,
 }
 
 #[derive(Deserialize, Serialize, sqlx::FromRow, Debug, Clone, PartialEq, ToSchema)]
-#[schema(title = "Redirect")]
+#[schema(title = "SimpleRedirectData")]
 pub(crate) struct RedirectDTO {
     #[schema(example = "gh")]
     pub alias: String,
@@ -42,7 +48,7 @@ pub(crate) struct RedirectListDTO {
     pub redirects: Vec<RedirectDTO>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub(crate) struct UpdateUrlDTO {
     pub url: String,
 }

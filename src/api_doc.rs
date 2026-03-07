@@ -7,6 +7,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::controller::admin;
 use crate::controller::login;
+use crate::controller::redirect;
 use crate::controller::user;
 use crate::model::{UserCredentialsDTO, UserRegistrationTokenDTO, UserTokenDTO};
 
@@ -23,6 +24,11 @@ use crate::model::{UserCredentialsDTO, UserRegistrationTokenDTO, UserTokenDTO};
         user::register_user_handler,
         user::simple_user_info_handler,
         user::change_user_password_handler,
+        redirect::create_redirect_handler,
+        redirect::get_all_user_redirects_handler,
+        redirect::update_redirect_handler,
+        redirect::delete_redirect_handler,
+        redirect::follow_redirect_handler,
     ),
     components(schemas(UserCredentialsDTO, UserTokenDTO, UserRegistrationTokenDTO)),
     modifiers(&SecurityAddon)
