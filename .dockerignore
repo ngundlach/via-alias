@@ -1,0 +1,6 @@
+target/
+.git/
+.gitignore
+.github/
+via-alias-jwt-secret
+via-alias.db
