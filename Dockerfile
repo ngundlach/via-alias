@@ -3,6 +3,8 @@ ARG DATA_DIR=/via_data/via-alias
 
 FROM rust:1.93-alpine as builder
 
+RUN apk add --no-cache curl=8.17.0
+
 ARG APP_NAME
 WORKDIR /app
 
