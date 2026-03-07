@@ -132,7 +132,7 @@ pub(crate) fn validate_user_credentials(
         .map_err(|e| DbServiceError::DatabaseError(e.to_string()))?;
     argon2
         .verify_password(user.pw.as_bytes(), &parsed_hash)
-        .map_err(|e| DbServiceError::AuthError(e.to_string()))?;
+        .map_err(|_| DbServiceError::InvalidCredentials)?;
     Ok(())
 }
 

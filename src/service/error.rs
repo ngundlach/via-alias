@@ -16,6 +16,7 @@ pub enum DbServiceError {
     PermissionError(String),
     TokenInvalid,
     ResourceConflict,
+    InvalidCredentials,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -41,6 +42,7 @@ impl fmt::Display for DbServiceError {
             DbServiceError::TokenInvalid => write!(f, "Token is invalid"),
             DbServiceError::PermissionError(msg) => write!(f, "Permission error: {msg}"),
             DbServiceError::ResourceConflict => write!(f, "Resource already exists"),
+            DbServiceError::InvalidCredentials => write!(f, "Wrong username or password"),
         }
     }
 }
@@ -60,6 +62,7 @@ impl IntoResponse for DbServiceError {
             DbServiceError::PermissionError(_) => StatusCode::FORBIDDEN.into_response(),
             DbServiceError::TokenInvalid => StatusCode::FORBIDDEN.into_response(),
             DbServiceError::ResourceConflict => StatusCode::CONFLICT.into_response(),
+            DbServiceError::InvalidCredentials => StatusCode::BAD_REQUEST.into_response(),
         }
     }
 }
