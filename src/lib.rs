@@ -12,7 +12,7 @@
 
 use std::{env, error::Error, fs::read_to_string, net::SocketAddr, sync::Arc, time::Duration};
 
-use axum::{Router, http::StatusCode, response::IntoResponse, routing::get};
+use axum::{Router, routing::get};
 use sqlx::{Pool, Sqlite, migrate::MigrateDatabase};
 use tokio::signal;
 
