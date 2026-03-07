@@ -1,0 +1,886 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "via-alias",
+    "description": "",
+    "license": {
+      "name": ""
+    },
+    "version": "0.1.10"
+  },
+  "paths": {
+    "/api/admin/redirects": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Get a list of all currently created redirects. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "get_all_redirects",
+        "responses": {
+          "200": {
+            "description": "Success. Returns a list of all currently created redirects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullRedirectListDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          },
+          "403": {
+            "description": "Forbidden. User authorized but doesn't have permission."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/redirects/{id}": {
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Delete a redirect via its id. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "delete_redirect",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The redirect id.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content. Deletes a redirect"
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          },
+          "403": {
+            "description": "Forbidden. User authorized but doesn't have permission."
+          },
+          "404": {
+            "description": "Not Found. Redirect doesn't exist."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/reg_token": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Request a user registration token. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "reg_token_request",
+        "responses": {
+          "200": {
+            "description": "Success. Returns valid registration token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRegistrationTokenDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          },
+          "403": {
+            "description": "Forbidden. User authorized but doesn't have permission."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Get a list of all users. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "get_all_users_data_admin",
+        "responses": {
+          "200": {
+            "description": "Ok. Returns list of persisted userdata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          },
+          "403": {
+            "description": "Forbidden. User authorized but doesn't have permission."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/users/{id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Get data about specific user. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "get_user_data_admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The user id.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok. Returns persisted userdata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          },
+          "403": {
+            "description": "Forbidden. User authorized but doesn't have permission."
+          },
+          "404": {
+            "description": "Not Found. User doesn't exist."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Delete a user. This will also delete all of the users registered redirects. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "delete_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The user id.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok. Returns userid and amount of deleted redirects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedUserDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          },
+          "403": {
+            "description": "Forbidden. User authorized but doesn't have permission."
+          },
+          "404": {
+            "description": "Not Found. User doesn't exist."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "login"
+        ],
+        "description": "Log user in. Request a user access token.",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCredentialsDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User authenticated. Returns valid JWT access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserTokenDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Invalid username or password"
+          }
+        }
+      }
+    },
+    "/api/redirects": {
+      "get": {
+        "tags": [
+          "redirects"
+        ],
+        "description": "Get a list of all redirects owned by the current user. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "get_user_redirects_list",
+        "responses": {
+          "200": {
+            "description": "Ok. Returns list of redirects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedirectListDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "redirects"
+        ],
+        "description": "Create a new redirect. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "create_redirect",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedirectDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created. Returns list of redirects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedirectDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Alias or url don't match requirements."
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          },
+          "409": {
+            "description": "A redirect with that alias already exists."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/redirects/{alias}": {
+      "delete": {
+        "tags": [
+          "redirects"
+        ],
+        "description": "Delete redirect. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "delete_redirect",
+        "parameters": [
+          {
+            "name": "alias",
+            "in": "path",
+            "description": "The redirect alias.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content. Redirect deleted successfully."
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          },
+          "403": {
+            "description": "Forbidden. User authorized but doesn't have permission."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "redirects"
+        ],
+        "description": "Create a new redirect. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "update_redirect",
+        "parameters": [
+          {
+            "name": "alias",
+            "in": "path",
+            "description": "The redirect alias.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUrlDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Ok. Changed the url of the redirect.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedirectDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          },
+          "403": {
+            "description": "Forbidden. User authenticated but doesn't have permission."
+          },
+          "404": {
+            "description": "Not Found. Redirect doesn't exist."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/users/info": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "description": "Get userdata about own useraccount. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "get_user_data",
+        "responses": {
+          "200": {
+            "description": "Ok. Returns userdata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleUserDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/users/password": {
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "description": "Change user-password. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "operationId": "change_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPasswordChangeDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Ok. Password changed successfully."
+          },
+          "400": {
+            "description": "Bad Request. Current password is invalid or wew password doesn't match requirements."
+          },
+          "401": {
+            "description": "Unauthorized. No valid access token."
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/users/register": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "description": "Register a new user. Requires a generated user registration token.",
+        "operationId": "register_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRegistrationDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created. User registered successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleUserDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request. Password or username don't match requirements."
+          },
+          "409": {
+            "description": "Conflict. A user with that name already exists."
+          }
+        }
+      }
+    },
+    "/healthcheck": {
+      "get": {
+        "tags": [
+          "healthcheck"
+        ],
+        "operationId": "healthcheck",
+        "responses": {
+          "200": {
+            "description": "Via-Alias is running"
+          }
+        }
+      }
+    },
+    "/{alias}": {
+      "get": {
+        "tags": [
+          "redirects"
+        ],
+        "description": "Follow the redirect.",
+        "operationId": "follow_redirect",
+        "parameters": [
+          {
+            "name": "alias",
+            "in": "path",
+            "description": "The redirect alias.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "Temporary Redirect. Follow redirect",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "URL of the created resource"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found. Redirect doesn't exist."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DeletedUserDTO": {
+        "type": "object",
+        "title": "DeletedUser",
+        "required": [
+          "user_id",
+          "deleted"
+        ],
+        "properties": {
+          "deleted": {
+            "$ref": "#/components/schemas/DeletedUserResourceDTO"
+          },
+          "user_id": {
+            "type": "string",
+            "example": "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"
+          }
+        }
+      },
+      "DeletedUserResourceDTO": {
+        "type": "object",
+        "title": "DeletedUserResource",
+        "required": [
+          "redirects"
+        ],
+        "properties": {
+          "redirects": {
+            "type": "integer",
+            "format": "int64",
+            "example": 5,
+            "minimum": 0
+          }
+        }
+      },
+      "FullRedirectListDTO": {
+        "type": "object",
+        "title": "FullRedirectList",
+        "required": [
+          "redirects"
+        ],
+        "properties": {
+          "redirects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Redirect"
+            }
+          }
+        }
+      },
+      "PasswordChangeDataDTO": {
+        "type": "object",
+        "title": "PasswordChangeData",
+        "required": [
+          "current_pw",
+          "new_pw"
+        ],
+        "properties": {
+          "current_pw": {
+            "type": "string",
+            "example": "superjedimeister1337"
+          },
+          "new_pw": {
+            "type": "string",
+            "example": "kfdslfoi32j4ekil32jm"
+          }
+        }
+      },
+      "Redirect": {
+        "type": "object",
+        "title": "RedirectData",
+        "required": [
+          "id",
+          "alias",
+          "url",
+          "owner"
+        ],
+        "properties": {
+          "alias": {
+            "type": "string",
+            "example": "gh"
+          },
+          "id": {
+            "type": "string",
+            "example": "ea07b388-0da5-4640-b30d-2f90467a612c"
+          },
+          "owner": {
+            "type": "string",
+            "example": "7484bf63-0c9a-41af-884e-e0fea7f0bb8e"
+          },
+          "url": {
+            "type": "string",
+            "example": "http://www.github.com"
+          }
+        }
+      },
+      "RedirectDTO": {
+        "type": "object",
+        "title": "SimpleRedirectData",
+        "required": [
+          "alias",
+          "url"
+        ],
+        "properties": {
+          "alias": {
+            "type": "string",
+            "example": "gh"
+          },
+          "url": {
+            "type": "string",
+            "example": "http://www.github.com"
+          }
+        }
+      },
+      "RedirectListDTO": {
+        "type": "object",
+        "title": "RedirectList",
+        "required": [
+          "redirects"
+        ],
+        "properties": {
+          "redirects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RedirectDTO"
+            }
+          }
+        }
+      },
+      "SimpleUserDTO": {
+        "type": "object",
+        "title": "SimpleUserData",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "b208ae42-2ab8-47b9-9c69-bdd7300e5847"
+          },
+          "name": {
+            "type": "string",
+            "example": "vader"
+          }
+        }
+      },
+      "UpdateUrlDTO": {
+        "type": "object",
+        "title": "UpdateUrl",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "example": "http://my-new-redirect-url.de"
+          }
+        }
+      },
+      "UserCredentialsDTO": {
+        "type": "object",
+        "title": "UserCredentials",
+        "required": [
+          "name",
+          "pw"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "luke"
+          },
+          "pw": {
+            "type": "string",
+            "example": "superjedimeister1337"
+          }
+        }
+      },
+      "UserDTO": {
+        "type": "object",
+        "title": "UserData",
+        "required": [
+          "id",
+          "name",
+          "is_admin"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "example": "false"
+          },
+          "name": {
+            "type": "string",
+            "example": "luke"
+          }
+        }
+      },
+      "UserListDTO": {
+        "type": "object",
+        "title": "UserList",
+        "required": [
+          "users"
+        ],
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDTO"
+            }
+          }
+        }
+      },
+      "UserPasswordChangeDTO": {
+        "type": "object",
+        "title": "UserPasswordChange",
+        "required": [
+          "user_id",
+          "pw"
+        ],
+        "properties": {
+          "pw": {
+            "$ref": "#/components/schemas/PasswordChangeDataDTO"
+          },
+          "user_id": {
+            "type": "string",
+            "example": "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"
+          }
+        }
+      },
+      "UserRegistrationDTO": {
+        "type": "object",
+        "title": "UserRegistration",
+        "required": [
+          "name",
+          "pw",
+          "token"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "vader"
+          },
+          "pw": {
+            "type": "string",
+            "example": "deathstar_pilot_extra_ordinaire1337"
+          },
+          "token": {
+            "type": "string",
+            "example": "8162f4c7-e32e-45bc-9089-bfd9d024e39e"
+          }
+        }
+      },
+      "UserRegistrationTokenDTO": {
+        "type": "object",
+        "title": "UserRegistrationToken",
+        "required": [
+          "registration_token"
+        ],
+        "properties": {
+          "registration_token": {
+            "type": "string",
+            "example": "85e83a5a-4f49-4ea7-9df9-93c2c2cc9b8f"
+          }
+        }
+      },
+      "UserTokenDTO": {
+        "type": "object",
+        "title": "UserAccessToken",
+        "required": [
+          "access_token",
+          "token_type",
+          "expires_in"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoiMjE1ZDU3YzAtMDM1My00Nzc2LWFjNTYtZDBiZWY5YTUxZTJjIiwiaXNfYWRtaW4iOmZhbHNlLCJleHAiOjE3NzI4OTczOTMsImp0aSI6IjRiZTcyNTUwLTZlYTUtNGQ3NS1iM2Q4LTdiNzJiYTEwZjE1MiJ9.qwy7zLn611SkZzI5mFJPwtRGjvjD0xmprSoMUII7xjcxRPjAbTEKH9gFIewYRGdwtcg0I-EhnttYMNZkqlmZNQ"
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int64",
+            "example": "900",
+            "minimum": 0
+          },
+          "token_type": {
+            "type": "string",
+            "example": "Bearer"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearer_auth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
