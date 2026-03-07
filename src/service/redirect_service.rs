@@ -26,6 +26,8 @@ impl RedirectServiceImpl {
             .valid_characters()
             .restricted("api")
             .restricted("healthcheck")
+            .restricted("swagger-ui")
+            .restricted("api-docs")
             .validate()
             .map_err(|e| DbServiceError::PayloadValidationError("alias".to_string(), e))
     }
