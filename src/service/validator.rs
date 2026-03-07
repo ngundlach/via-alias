@@ -225,10 +225,7 @@ mod test {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.len(), 1);
-        assert!(err.contains(&format!(
-            "{}",
-            PayloadValidator::ERR_AT_LEAST_ONE_ALPHABETIC
-        )));
+        assert!(err.contains(&PayloadValidator::ERR_AT_LEAST_ONE_ALPHABETIC.to_string()));
     }
     #[test]
     fn one_numeric_succeeds() {
@@ -241,7 +238,7 @@ mod test {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.len(), 1);
-        assert!(err.contains(&format!("{}", PayloadValidator::ERR_AT_LEAST_ONE_NUMERIC)));
+        assert!(err.contains(&PayloadValidator::ERR_AT_LEAST_ONE_NUMERIC.to_string()));
     }
     #[test]
     fn required_character_fails() {

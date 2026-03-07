@@ -154,7 +154,7 @@ mod tests {
         ];
 
         for dto in &dtos {
-            insert_into_test_db(&dto, pool).await;
+            insert_into_test_db(dto, pool).await;
         }
         (dtos, owner)
     }
@@ -397,7 +397,7 @@ mod tests {
         let limited_redirect_list = redirects_result.unwrap();
         assert!(!limited_redirect_list.is_empty());
         assert_eq!(limited_redirect_list.len(), 1);
-        assert_eq!(limited_redirect_list[0], new_redirect.into());
+        assert_eq!(limited_redirect_list[0], new_redirect);
         let full_list = repo.read_all_redirects().await.unwrap();
         assert_eq!(full_list.len(), seeded_list.len() + 1);
     }
