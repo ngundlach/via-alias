@@ -18,31 +18,43 @@ impl From<User> for UserDTO {
         }
     }
 }
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, ToSchema)]
+#[schema(title = "UserData")]
 pub struct UserDTO {
+    #[schema(example = "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3")]
     pub id: String,
+    #[schema(example = "luke")]
     pub name: String,
+    #[schema(example = "false")]
     pub is_admin: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
+#[schema(title = "DeletedUser")]
 pub struct DeletedUserDTO {
+    #[schema(example = "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3")]
     pub user_id: String,
     pub deleted: DeletedUserResourceDTO,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
+#[schema(title = "DeletedUserResource")]
 pub struct DeletedUserResourceDTO {
+    #[schema(example = 5)]
     pub redirects: u64,
 }
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
+#[schema(title = "UserList")]
 pub struct UserListDTO {
     pub users: Vec<UserDTO>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
+#[schema(title = "SimpleUserData")]
 pub struct SimpleUserDTO {
+    #[schema(example = "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3")]
     pub id: String,
+    #[schema(example = "luke")]
     pub name: String,
 }
 
@@ -107,8 +119,10 @@ pub struct UserClaimsDTO {
     pub jti: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Hash, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Hash, Eq, ToSchema)]
+#[schema(title = "UserRegistrationToken")]
 pub struct UserRegistrationTokenDTO {
+    #[schema(example = "85e83a5a-4f49-4ea7-9df9-93c2c2cc9b8f")]
     pub registration_token: String,
 }
 

@@ -5,15 +5,22 @@ use utoipa::{
 };
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::controller::admin;
 use crate::controller::login;
-use crate::model::{UserCredentialsDTO, UserTokenDTO};
+use crate::model::{UserCredentialsDTO, UserRegistrationTokenDTO, UserTokenDTO};
 
 #[derive(OpenApi)]
 #[openapi(
     paths(
         login::login_user_handler,
+        admin::request_user_registration_token_handler,
+        admin::get_all_redirects_admin_handler,
+        admin::delete_redirect_admin_handler,
+        admin::user_info_admin_handler,
+        admin::all_users_info_admin_handler,
+        admin::delete_user_admin_handler
     ),
-    components(schemas(UserCredentialsDTO, UserTokenDTO)),
+    components(schemas(UserCredentialsDTO, UserTokenDTO, UserRegistrationTokenDTO)),
     modifiers(&SecurityAddon)
 )]
 struct ApiDoc;
