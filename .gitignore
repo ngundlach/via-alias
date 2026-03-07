@@ -8,5 +8,8 @@ target/
 *.db-shm
 *.db-wal
 
+via-alias-jwt-secret
+.markdownlint.json
+
 .envrc
 .env
