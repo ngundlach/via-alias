@@ -211,7 +211,7 @@ impl UserService for UserServiceImpl {
         validator::validate_user_credentials(
             &UserCredentialsDTO {
                 name: user_data.name.clone(),
-                pw: password_change.pw.old_pw.clone(),
+                pw: password_change.pw.current_pw.clone(),
             },
             &user_data,
         )?;

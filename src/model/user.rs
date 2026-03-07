@@ -52,9 +52,9 @@ pub struct UserListDTO {
 #[derive(Serialize, ToSchema)]
 #[schema(title = "SimpleUserData")]
 pub struct SimpleUserDTO {
-    #[schema(example = "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3")]
+    #[schema(example = "b208ae42-2ab8-47b9-9c69-bdd7300e5847")]
     pub id: String,
-    #[schema(example = "luke")]
+    #[schema(example = "vader")]
     pub name: String,
 }
 
@@ -85,14 +85,19 @@ pub struct UserCredentialsDTO {
     pub pw: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, ToSchema)]
+#[schema(title = "PasswordChangeData")]
 pub struct PasswordChangeDataDTO {
-    pub old_pw: String,
+    #[schema(example = "superjedimeister1337")]
+    pub current_pw: String,
+    #[schema(example = "kfdslfoi32j4ekil32jm")]
     pub new_pw: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, ToSchema)]
+#[schema(title = "UserPasswordChange")]
 pub struct UserPasswordChangeDTO {
+    #[schema(example = "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3")]
     pub user_id: String,
     pub pw: PasswordChangeDataDTO,
 }
@@ -126,10 +131,14 @@ pub struct UserRegistrationTokenDTO {
     pub registration_token: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, ToSchema)]
+#[schema(title = "UserRegistration")]
 pub struct UserRegistrationDTO {
+    #[schema(example = "vader")]
     pub name: String,
+    #[schema(example = "deathstar_pilot_extra_ordinaire1337")]
     pub pw: String,
+    #[schema(example = "8162f4c7-e32e-45bc-9089-bfd9d024e39e")]
     pub token: String,
 }
 

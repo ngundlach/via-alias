@@ -7,6 +7,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::controller::admin;
 use crate::controller::login;
+use crate::controller::user;
 use crate::model::{UserCredentialsDTO, UserRegistrationTokenDTO, UserTokenDTO};
 
 #[derive(OpenApi)]
@@ -18,7 +19,10 @@ use crate::model::{UserCredentialsDTO, UserRegistrationTokenDTO, UserTokenDTO};
         admin::delete_redirect_admin_handler,
         admin::user_info_admin_handler,
         admin::all_users_info_admin_handler,
-        admin::delete_user_admin_handler
+        admin::delete_user_admin_handler,
+        user::register_user_handler,
+        user::simple_user_info_handler,
+        user::change_user_password_handler,
     ),
     components(schemas(UserCredentialsDTO, UserTokenDTO, UserRegistrationTokenDTO)),
     modifiers(&SecurityAddon)
