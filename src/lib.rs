@@ -25,6 +25,7 @@ use crate::{
     },
 };
 
+mod api_doc;
 mod controller;
 mod data;
 mod middleware;
@@ -130,6 +131,7 @@ fn create_router(context: AppContext) -> Router {
         .route("/{alias}", get(redirect::get_redirect_handler))
         .route("/healthcheck", get(|| async { StatusCode::OK }))
         .with_state(context)
+        .merge(api_doc::api_doc_router())
 }
 
 pub async fn run_app() -> Result<(), Box<dyn Error>> {

@@ -1,11 +1,24 @@
 use axum::{Json, Router, extract::State, http::StatusCode, response::IntoResponse, routing::post};
 
-use crate::{AppContext, model::UserCredentialsDTO};
+use crate::{
+    AppContext,
+    model::{UserCredentialsDTO, UserTokenDTO},
+};
 
 pub fn router() -> Router<AppContext> {
     Router::new().route("/api/auth/login", post(login_user_handler))
 }
 
+#[utoipa::path(post, 
+    path = "/api/auth/login",
+    tag="login", 
+    description = "Log user in. Request a user access token.",
+    request_body = UserCredentialsDTO, 
+    operation_id="login", 
+    responses(
+        (status = StatusCode::OK, description = "User authenticated. Returns valid JWT access token.", body = UserTokenDTO),
+        (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. Invalid username or password"),
+))]
 async fn login_user_handler(
     State(app_state): State<AppContext>,
     Json(user): Json<UserCredentialsDTO>,

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 #[derive(sqlx::FromRow, Debug, PartialEq, Clone)]
 pub struct User {
@@ -63,9 +64,12 @@ impl From<UserDTO> for SimpleUserDTO {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
+#[schema(title = "UserCredentials")]
 pub struct UserCredentialsDTO {
+    #[schema(example = "luke")]
     pub name: String,
+    #[schema(example = "superjedimeister1337")]
     pub pw: String,
 }
 
@@ -81,11 +85,17 @@ pub struct UserPasswordChangeDTO {
     pub pw: PasswordChangeDataDTO,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
+#[schema(title = "UserAccessToken")]
 pub struct UserTokenDTO {
+    #[schema(
+        example = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoiMjE1ZDU3YzAtMDM1My00Nzc2LWFjNTYtZDBiZWY5YTUxZTJjIiwiaXNfYWRtaW4iOmZhbHNlLCJleHAiOjE3NzI4OTczOTMsImp0aSI6IjRiZTcyNTUwLTZlYTUtNGQ3NS1iM2Q4LTdiNzJiYTEwZjE1MiJ9.qwy7zLn611SkZzI5mFJPwtRGjvjD0xmprSoMUII7xjcxRPjAbTEKH9gFIewYRGdwtcg0I-EhnttYMNZkqlmZNQ"
+    )]
     pub access_token: String,
     // pub refresh_token: String,
+    #[schema(example = "Bearer")]
     pub token_type: String,
+    #[schema(example = "900")]
     pub expires_in: u64,
 }
 
