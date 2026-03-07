@@ -83,7 +83,7 @@ async fn register_user_handler(
     tag="users", 
     description = "Get userdata about own useraccount. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
     security(("bearer_auth" = [])),
-    operation_id="get_users_data", 
+    operation_id="get_user_data", 
     responses(
         (status = StatusCode::OK, description = "Ok. Returns userdata.", body = SimpleUserDTO),
         (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. No valid access token."),

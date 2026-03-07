@@ -112,7 +112,7 @@ async fn create_redirect_handler(
     operation_id="follow_redirect", 
     responses(
         (status = StatusCode::NOT_FOUND, description = "Not Found. Redirect doesn't exist."), 
-        (status = StatusCode::TEMPORARY_REDIRECT, description = "Follow redirect",
+        (status = StatusCode::TEMPORARY_REDIRECT, description = "Temporary Redirect. Follow redirect",
             headers(
                 ("Location" = String, description = "URL of the created resource")
             )
