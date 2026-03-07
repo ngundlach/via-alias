@@ -49,6 +49,8 @@ pub(crate) struct RedirectListDTO {
 }
 
 #[derive(Deserialize, ToSchema)]
+#[schema(title = "UpdateUrl")]
 pub(crate) struct UpdateUrlDTO {
+    #[schema(example = "http://my-new-redirect-url.de")]
     pub url: String,
 }
