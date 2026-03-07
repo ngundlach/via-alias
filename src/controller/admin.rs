@@ -8,7 +8,7 @@ use axum::{
 
 use crate::{
     AppContext, middleware,
-    model::{DeletedUserDTO, RedirectListDTO, UserDTO, UserListDTO, UserRegistrationTokenDTO},
+    model::{DeletedUserDTO, FullRedirectListDTO, UserDTO, UserListDTO, UserRegistrationTokenDTO},
     service::DbServiceError,
 };
 
@@ -60,7 +60,7 @@ async fn request_user_registration_token_handler(
     security(("bearer_auth" = [])),
     operation_id="get_all_redirects", 
     responses(
-        (status = StatusCode::OK, description = "Success. Returns a list of all currently created redirects", body = RedirectListDTO),
+        (status = StatusCode::OK, description = "Success. Returns a list of all currently created redirects", body = FullRedirectListDTO),
         (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. No valid access token."),
         (status = StatusCode::FORBIDDEN, description = "Forbidden. User authorized but doesn't have permission.")
 ))]
