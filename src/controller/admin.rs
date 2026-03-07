@@ -30,7 +30,7 @@ async fn request_user_registration_token_handler(
 ) -> impl IntoResponse {
     let res = app_context
         .user_service
-        .create_user_registration_token()
+        .create_user_registration_token(&app_context.app_config)
         .await;
     match res {
         Ok(t) => (StatusCode::OK, Json(t)).into_response(),

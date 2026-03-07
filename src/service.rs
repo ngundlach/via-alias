@@ -5,7 +5,6 @@ mod user_service;
 mod validator;
 use async_trait::async_trait;
 
-use crate::JwtConfig;
 use crate::model::{
     DeletedUserDTO, FullRedirectListDTO, RedirectCreationDTO, SimpleUserDTO, UserCredentialsDTO,
     UserDTO, UserListDTO, UserPasswordChangeDTO, UserRegistrationTokenDTO, UserTokenDTO,
@@ -17,6 +16,7 @@ pub use crate::service::redirect_service::RedirectServiceImpl;
 pub use crate::service::user_service::UserServiceImpl;
 pub use crate::service::validator::PayloadValidator;
 pub(crate) use crate::service::validator::validate_registration_token;
+use crate::{AppConfig, JwtConfig};
 
 #[async_trait]
 pub trait RedirectService {
@@ -61,6 +61,7 @@ pub trait UserService {
     ) -> Result<(), DbServiceError>;
     async fn create_user_registration_token(
         &self,
+        app_config: &AppConfig,
     ) -> Result<UserRegistrationTokenDTO, DbServiceError>;
 }
 

@@ -103,11 +103,12 @@ impl UserRegistrationTokenInMemoryImpl {
 impl UserRegistrationTokenRepo for UserRegistrationTokenInMemoryImpl {
     async fn create_user_registration_token(
         &self,
+        ttl: u64,
     ) -> Result<UserRegistrationToken, DbServiceError> {
         let exp_at = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("system clock is before Unix epoch")
-            .checked_add(Duration::from_mins(30))
+            .checked_add(Duration::from_secs(ttl))
             .expect("timestamp overflow")
             .as_secs();
 
@@ -170,6 +171,9 @@ mod tests {
         model::UserRegistrationToken,
         service::DbServiceError,
     };
+    fn ttl() -> u64 {
+        1900
+    }
     fn future_time() -> u64 {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -182,7 +186,7 @@ mod tests {
     #[tokio::test]
     async fn test_inserting_new_registration_token_success() {
         let token_repo = UserRegistrationTokenInMemoryImpl::new();
-        let token = token_repo.create_user_registration_token().await;
+        let token = token_repo.create_user_registration_token(ttl()).await;
         dbg!(token.as_ref().err());
         assert!(token.is_ok());
         let token = token.unwrap();
@@ -208,7 +212,7 @@ mod tests {
     #[tokio::test]
     async fn test_read_token_returns_correct_token() {
         let store = UserRegistrationTokenInMemoryImpl::new();
-        let created = store.create_user_registration_token().await.unwrap();
+        let created = store.create_user_registration_token(ttl()).await.unwrap();
 
         let read = store.read_token(&created.registration_token).await;
         assert!(read.is_ok());
@@ -250,7 +254,7 @@ mod tests {
     #[tokio::test]
     async fn test_delete_token_removes_from_both_maps() {
         let store = UserRegistrationTokenInMemoryImpl::new();
-        let token = store.create_user_registration_token().await.unwrap();
+        let token = store.create_user_registration_token(ttl()).await.unwrap();
 
         let result = store
             .delete_user_registration_token(&token.registration_token)
@@ -266,7 +270,7 @@ mod tests {
     #[tokio::test]
     async fn test_delete_token_is_no_longer_readable() {
         let store = UserRegistrationTokenInMemoryImpl::new();
-        let token = store.create_user_registration_token().await.unwrap();
+        let token = store.create_user_registration_token(ttl()).await.unwrap();
         store
             .delete_user_registration_token(&token.registration_token)
             .await
@@ -293,8 +297,8 @@ mod tests {
     #[tokio::test]
     async fn test_delete_one_token_leaves_other_intact() {
         let store = UserRegistrationTokenInMemoryImpl::new();
-        let token_a = store.create_user_registration_token().await.unwrap();
-        let token_b = store.create_user_registration_token().await.unwrap();
+        let token_a = store.create_user_registration_token(ttl()).await.unwrap();
+        let token_b = store.create_user_registration_token(ttl()).await.unwrap();
 
         store
             .delete_user_registration_token(&token_a.registration_token)
@@ -360,7 +364,7 @@ mod tests {
         let mut join_set = JoinSet::new();
         for _ in 0..n {
             let s = Arc::clone(&store);
-            join_set.spawn(async move { s.create_user_registration_token().await.unwrap() });
+            join_set.spawn(async move { s.create_user_registration_token(ttl()).await.unwrap() });
         }
 
         let mut tokens = vec![];

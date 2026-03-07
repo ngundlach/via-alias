@@ -43,6 +43,7 @@ struct AppConfig {
     port: u16,
     db_location: String,
     jwt_config: JwtConfig,
+    reg_token_ttl: u64,
 }
 #[derive(Clone)]
 struct JwtConfig {
@@ -76,6 +77,7 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
     const JWT_TTL: &str = "VIA_ALIAS_JWT_TTL";
     const PORT_ENV: &str = "VIA_ALIAS_PORT";
     const DB_LOC_ENV: &str = "VIA_ALIAS_DB";
+    const REG_TOKEN_TTL: &str = "VIA_ALIAS_REG_TOKEN_TTL";
     let secret = read_secret(JWT_SECRET_ENV)
         .or_else(|_| env::var(JWT_SECRET_ENV))
         .map_err(|_| format!("{JWT_SECRET_ENV} is not set"))?;
@@ -85,7 +87,7 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
         .parse()
         .map_err(|_| format!("{PORT_ENV} is not a valid port number"))?;
 
-    let ttl = env::var(JWT_TTL)
+    let jwt_ttl = env::var(JWT_TTL)
         .unwrap_or_else(|_| "900".to_owned())
         .parse()
         .map_err(|_| format!("{JWT_TTL} is not a valid value"))?;
@@ -95,16 +97,22 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
         .parse()
         .map_err(|_| format!("{DB_LOC_ENV} is not a valid value"))?;
 
+    let reg_token_ttl: u64 = env::var(REG_TOKEN_TTL)
+        .unwrap_or_else(|_| "1800".to_owned())
+        .parse()
+        .map_err(|_| format!("{REG_TOKEN_TTL} is not a valid value"))?;
+
     let jwt_config = JwtConfig {
         secret,
         alg: jsonwebtoken::Algorithm::HS512,
-        ttl,
+        ttl: jwt_ttl,
     };
 
     Ok(AppConfig {
         port,
         db_location,
         jwt_config,
+        reg_token_ttl,
     })
 }
 

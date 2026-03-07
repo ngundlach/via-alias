@@ -12,6 +12,7 @@ use base64::{Engine, engine::general_purpose};
 use uuid::Uuid;
 
 use crate::{
+    AppConfig,
     data::{UserRegistrationTokenRepo, UserRepo, UserRepoError},
     model::{
         DeletedUserDTO, DeletedUserResourceDTO, SimpleUserDTO, User, UserCredentialsDTO, UserDTO,
@@ -229,10 +230,11 @@ impl UserService for UserServiceImpl {
 
     async fn create_user_registration_token(
         &self,
+        app_config: &AppConfig,
     ) -> Result<UserRegistrationTokenDTO, DbServiceError> {
         let token = self
             .user_registration_token_repo
-            .create_user_registration_token()
+            .create_user_registration_token(app_config.reg_token_ttl)
             .await?;
         Ok(UserRegistrationTokenDTO {
             registration_token: token.registration_token,
