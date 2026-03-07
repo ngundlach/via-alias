@@ -9,6 +9,7 @@ use crate::controller::admin;
 use crate::controller::login;
 use crate::controller::redirect;
 use crate::controller::user;
+use crate::health_check;
 use crate::model::{UserCredentialsDTO, UserRegistrationTokenDTO, UserTokenDTO};
 
 #[derive(OpenApi)]
@@ -29,6 +30,7 @@ use crate::model::{UserCredentialsDTO, UserRegistrationTokenDTO, UserTokenDTO};
         redirect::update_redirect_handler,
         redirect::delete_redirect_handler,
         redirect::follow_redirect_handler,
+        health_check::health_check_handler,
     ),
     components(schemas(UserCredentialsDTO, UserTokenDTO, UserRegistrationTokenDTO)),
     modifiers(&SecurityAddon)
