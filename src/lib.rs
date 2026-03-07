@@ -12,12 +12,12 @@
 
 use std::{env, error::Error, fs::read_to_string, net::SocketAddr, sync::Arc, time::Duration};
 
-use axum::{Router, http::StatusCode, routing::get};
+use axum::{Router, http::StatusCode, response::IntoResponse, routing::get};
 use sqlx::{Pool, Sqlite, migrate::MigrateDatabase};
 use tokio::signal;
 
 use crate::{
-    controller::{admin, login, redirect, user},
+    controller::{admin, health_check, login, redirect, user},
     data::{RedirectRepoSqliteImpl, UserRegistrationTokenInMemoryImpl, UserRepoSqliteImpl},
     service::{
         LoginService, LoginServiceImpl, RedirectService, RedirectServiceImpl, UserService,
@@ -128,10 +128,10 @@ fn create_router(context: AppContext) -> Router {
         ))
         .merge(user::user_router())
         .merge(login::router())
-        .route("/{alias}", get(redirect::get_redirect_handler))
-        .route("/healthcheck", get(|| async { StatusCode::OK }))
+        .route("/{alias}", get(redirect::follow_redirect_handler))
         .with_state(context)
         .merge(api_doc::api_doc_router())
+        .route("/healthcheck", get(health_check::health_check_handler))
 }
 
 pub async fn run_app() -> Result<(), Box<dyn Error>> {
