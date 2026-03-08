@@ -219,5 +219,3 @@ docker run \
 This will run a container based on the newly created image and create a volume
 named `via_alias` for persistence mounted to the required directory. The port is
 mapped to `6789`.
-
----
