@@ -78,6 +78,11 @@ mod tests {
         model::UserClaimsDTO,
     };
 
+    enum JwtState {
+        Valid,
+        Expired,
+    }
+
     fn test_jwt_config() -> JwtConfig {
         JwtConfig {
             secret: "super_secure_test_secret".to_owned(),
@@ -95,13 +100,15 @@ mod tests {
         }
     }
 
-    fn create_expired_jwt() -> (String, UserClaimsDTO) {
+    fn create_jwt(jwt_state: JwtState) -> (String, UserClaimsDTO) {
         let expiration_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("system clock is before Unix epoch")
-            .checked_sub(Duration::from_mins(15))
-            .expect("timestamp overflow")
-            .as_secs();
+            .expect("system clock is before Unix epoch");
+        let expiration_time = match jwt_state {
+            JwtState::Valid => expiration_time.checked_add(Duration::from_mins(15)),
+            JwtState::Expired => expiration_time.checked_sub(Duration::from_mins(15)),
+        };
+        let expiration_time = expiration_time.expect("timestamp overflow").as_secs();
 
         let user_claims = create_test_user_claims(expiration_time);
         let jwt_config = test_jwt_config();
@@ -122,45 +129,11 @@ mod tests {
         )
     }
 
-    fn create_valid_jwt() -> (String, UserClaimsDTO) {
-        let expiration_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("system clock is before Unix epoch")
-            .checked_add(Duration::from_mins(15))
-            .expect("timestamp overflow")
-            .as_secs();
-
-        let user_claims = create_test_user_claims(expiration_time);
-        let jwt_config = test_jwt_config();
-        let jwt_header = Header::new(jwt_config.alg);
-        let jwt_token = encode(
-            &jwt_header,
-            Some(&user_claims),
-            &EncodingKey::from_secret(jwt_config.secret.as_bytes()),
-        )
-        .unwrap();
-
-        (
-            format!(
-                "{}.{}.{}",
-                jwt_token.protected, jwt_token.payload, jwt_token.signature,
-            ),
-            user_claims,
-        )
-    }
-
-    fn create_auth_header_with_valid_bearer_token() -> (HeaderMap, String, UserClaimsDTO) {
+    fn create_auth_header_with_bearer_token(
+        jwt_state: JwtState,
+    ) -> (HeaderMap, String, UserClaimsDTO) {
         let mut header = HeaderMap::new();
-        let (jwt, user_claims) = create_valid_jwt();
-        let bearer = format!("Bearer {}", jwt);
-        let header_val = HeaderValue::from_str(bearer.as_str()).unwrap();
-        header.append("authorization", header_val);
-        (header, jwt, user_claims)
-    }
-
-    fn create_auth_header_with_expired_bearer_token() -> (HeaderMap, String, UserClaimsDTO) {
-        let mut header = HeaderMap::new();
-        let (jwt, user_claims) = create_expired_jwt();
+        let (jwt, user_claims) = create_jwt(jwt_state);
         let bearer = format!("Bearer {}", jwt);
         let header_val = HeaderValue::from_str(bearer.as_str()).unwrap();
         header.append("authorization", header_val);
@@ -169,7 +142,7 @@ mod tests {
 
     #[test]
     fn test_extract_bearer_token_success() {
-        let (header, expected, _) = create_auth_header_with_valid_bearer_token();
+        let (header, expected, _) = create_auth_header_with_bearer_token(JwtState::Valid);
 
         let token_result = extract_bearer_token(&header);
         assert!(token_result.is_ok());
@@ -193,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_validate_token_with_valid_jwt_success() {
-        let (header, _, expected_claims) = create_auth_header_with_valid_bearer_token();
+        let (header, _, expected_claims) = create_auth_header_with_bearer_token(JwtState::Valid);
         let claims = validate_bearer_token::<UserClaimsDTO>(&header, &test_jwt_config());
         dbg!(claims.as_ref().err());
         assert!(claims.is_ok());
@@ -202,7 +175,7 @@ mod tests {
 
     #[test]
     fn test_validate_token_with_expired_jwt_fails() {
-        let (header, _, _) = create_auth_header_with_expired_bearer_token();
+        let (header, _, _) = create_auth_header_with_bearer_token(JwtState::Expired);
         let claims = validate_bearer_token::<UserClaimsDTO>(&header, &test_jwt_config());
         assert!(claims.is_err());
     }
