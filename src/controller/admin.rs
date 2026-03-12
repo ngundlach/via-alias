@@ -82,7 +82,7 @@ async fn get_all_redirects_admin_handler(
     tag="admin", 
     description = "Delete a redirect via its id. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
     security(("bearer_auth" = [])),
-    operation_id="delete_redirect", 
+    operation_id="delete_redirect_by_id",
     responses(
         (status = StatusCode::NO_CONTENT, description = "No Content. Deletes a redirect"),
         (status = StatusCode::NOT_FOUND, description = "Not Found. Redirect doesn't exist."),
