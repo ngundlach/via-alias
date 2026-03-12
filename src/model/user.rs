@@ -21,18 +21,18 @@ impl From<User> for UserDTO {
 #[derive(Serialize, Debug, ToSchema)]
 #[schema(title = "UserData")]
 pub struct UserDTO {
-    #[schema(example = "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3")]
+    #[schema(examples("d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"))]
     pub id: String,
-    #[schema(example = "luke")]
+    #[schema(examples("luke"))]
     pub name: String,
-    #[schema(example = "false")]
+    #[schema(examples("false"))]
     pub is_admin: bool,
 }
 
 #[derive(Serialize, ToSchema)]
 #[schema(title = "DeletedUser")]
 pub struct DeletedUserDTO {
-    #[schema(example = "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3")]
+    #[schema(examples("d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"))]
     pub user_id: String,
     pub deleted: DeletedUserResourceDTO,
 }
@@ -40,7 +40,7 @@ pub struct DeletedUserDTO {
 #[derive(Serialize, ToSchema)]
 #[schema(title = "DeletedUserResource")]
 pub struct DeletedUserResourceDTO {
-    #[schema(example = 5)]
+    #[schema(examples(5))]
     pub redirects: u64,
 }
 #[derive(Serialize, ToSchema)]
@@ -52,9 +52,9 @@ pub struct UserListDTO {
 #[derive(Serialize, ToSchema)]
 #[schema(title = "SimpleUserData")]
 pub struct SimpleUserDTO {
-    #[schema(example = "b208ae42-2ab8-47b9-9c69-bdd7300e5847")]
+    #[schema(examples("b208ae42-2ab8-47b9-9c69-bdd7300e5847"))]
     pub id: String,
-    #[schema(example = "vader")]
+    #[schema(examples("vader"))]
     pub name: String,
 }
 
@@ -79,25 +79,25 @@ impl From<UserDTO> for SimpleUserDTO {
 #[derive(Deserialize, ToSchema)]
 #[schema(title = "UserCredentials")]
 pub struct UserCredentialsDTO {
-    #[schema(example = "luke")]
+    #[schema(examples("luke"))]
     pub name: String,
-    #[schema(example = "superjedimeister1337")]
+    #[schema(examples("superjedimeister1337"))]
     pub pw: String,
 }
 
 #[derive(Deserialize, Debug, ToSchema)]
 #[schema(title = "PasswordChangeData")]
 pub struct PasswordChangeDataDTO {
-    #[schema(example = "superjedimeister1337")]
+    #[schema(examples("superjedimeister1337"))]
     pub current_pw: String,
-    #[schema(example = "kfdslfoi32j4ekil32jm")]
+    #[schema(examples("kfdslfoi32j4ekil32jm"))]
     pub new_pw: String,
 }
 
 #[derive(Debug, ToSchema)]
 #[schema(title = "UserPasswordChange")]
 pub struct UserPasswordChangeDTO {
-    #[schema(example = "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3")]
+    #[schema(examples("d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"))]
     pub user_id: String,
     pub pw: PasswordChangeDataDTO,
 }
@@ -105,14 +105,14 @@ pub struct UserPasswordChangeDTO {
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 #[schema(title = "UserAccessToken")]
 pub struct UserTokenDTO {
-    #[schema(
-        example = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoiMjE1ZDU3YzAtMDM1My00Nzc2LWFjNTYtZDBiZWY5YTUxZTJjIiwiaXNfYWRtaW4iOmZhbHNlLCJleHAiOjE3NzI4OTczOTMsImp0aSI6IjRiZTcyNTUwLTZlYTUtNGQ3NS1iM2Q4LTdiNzJiYTEwZjE1MiJ9.qwy7zLn611SkZzI5mFJPwtRGjvjD0xmprSoMUII7xjcxRPjAbTEKH9gFIewYRGdwtcg0I-EhnttYMNZkqlmZNQ"
-    )]
+    #[schema(examples(
+        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoiMjE1ZDU3YzAtMDM1My00Nzc2LWFjNTYtZDBiZWY5YTUxZTJjIiwiaXNfYWRtaW4iOmZhbHNlLCJleHAiOjE3NzI4OTczOTMsImp0aSI6IjRiZTcyNTUwLTZlYTUtNGQ3NS1iM2Q4LTdiNzJiYTEwZjE1MiJ9.qwy7zLn611SkZzI5mFJPwtRGjvjD0xmprSoMUII7xjcxRPjAbTEKH9gFIewYRGdwtcg0I-EhnttYMNZkqlmZNQ"
+    ))]
     pub access_token: String,
     // pub refresh_token: String,
-    #[schema(example = "Bearer")]
+    #[schema(examples("Bearer"))]
     pub token_type: String,
-    #[schema(example = "900")]
+    #[schema(examples("900"))]
     pub expires_in: u64,
 }
 
@@ -127,18 +127,18 @@ pub struct UserClaimsDTO {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Hash, Eq, ToSchema)]
 #[schema(title = "UserRegistrationToken")]
 pub struct UserRegistrationTokenDTO {
-    #[schema(example = "85e83a5a-4f49-4ea7-9df9-93c2c2cc9b8f")]
+    #[schema(examples("85e83a5a-4f49-4ea7-9df9-93c2c2cc9b8f"))]
     pub registration_token: String,
 }
 
 #[derive(Deserialize, Debug, ToSchema)]
 #[schema(title = "UserRegistration")]
 pub struct UserRegistrationDTO {
-    #[schema(example = "vader")]
+    #[schema(examples("vader"))]
     pub name: String,
-    #[schema(example = "deathstar_pilot_extra_ordinaire1337")]
+    #[schema(examples("deathstar_pilot_extra_ordinaire1337"))]
     pub pw: String,
-    #[schema(example = "8162f4c7-e32e-45bc-9089-bfd9d024e39e")]
+    #[schema(examples("8162f4c7-e32e-45bc-9089-bfd9d024e39e"))]
     pub token: String,
 }
 

@@ -3,13 +3,13 @@ use utoipa::ToSchema;
 #[derive(Debug, Clone, Deserialize, Serialize, sqlx::FromRow, PartialEq, ToSchema)]
 #[schema(title = "RedirectData")]
 pub(crate) struct Redirect {
-    #[schema(example = "ea07b388-0da5-4640-b30d-2f90467a612c")]
+    #[schema(examples("ea07b388-0da5-4640-b30d-2f90467a612c"))]
     pub id: String,
-    #[schema(example = "gh")]
+    #[schema(examples("gh"))]
     pub alias: String,
-    #[schema(example = "http://www.github.com")]
+    #[schema(examples("http://www.github.com"))]
     pub url: String,
-    #[schema(example = "7484bf63-0c9a-41af-884e-e0fea7f0bb8e")]
+    #[schema(examples("7484bf63-0c9a-41af-884e-e0fea7f0bb8e"))]
     pub owner: String,
 }
 
@@ -22,9 +22,9 @@ pub(crate) struct FullRedirectListDTO {
 #[derive(Deserialize, Serialize, sqlx::FromRow, Debug, Clone, PartialEq, ToSchema)]
 #[schema(title = "SimpleRedirectData")]
 pub(crate) struct RedirectDTO {
-    #[schema(example = "gh")]
+    #[schema(examples("gh"))]
     pub alias: String,
-    #[schema(example = "http://www.github.com")]
+    #[schema(examples("http://www.github.com"))]
     pub url: String,
 }
 
@@ -51,6 +51,6 @@ pub(crate) struct RedirectListDTO {
 #[derive(Deserialize, ToSchema)]
 #[schema(title = "UpdateUrl")]
 pub(crate) struct UpdateUrlDTO {
-    #[schema(example = "http://my-new-redirect-url.de")]
+    #[schema(examples("http://my-new-redirect-url.de"))]
     pub url: String,
 }
