@@ -19,6 +19,7 @@ and Axum, but it can theoretically be used.
   - [Podman](#podman)
 - [Configuration](#configuration)
 - [Building with Docker](#building-with-docker)
+  - [Building with Docker-compose](#building-with-docker-compose)
 
 ---
 
@@ -219,3 +220,25 @@ docker run \
 This will run a container based on the newly created image and create a volume
 named `via_alias` for persistence mounted to the required directory. The port is
 mapped to `6789`.
+
+### Building with Docker-compose
+
+```yaml
+services:
+  via-alias:
+    build: .
+    image: via-alias
+    secrets:
+      - VIA_ALIAS_JWT_SECRET
+    volumes:
+      - via_alias_data:/via_data/via-alias
+    ports:
+      - "6789:6789"
+
+secrets:
+  VIA_ALIAS_JWT_SECRET:
+    file: ./via-alias-jwt-secret
+
+volumes:
+  via_alias_data:
+```
