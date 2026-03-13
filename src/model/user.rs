@@ -25,7 +25,7 @@ pub struct UserDTO {
     pub id: String,
     #[schema(examples("luke"))]
     pub name: String,
-    #[schema(examples("false"))]
+    #[schema(examples(false))]
     pub is_admin: bool,
 }
 
@@ -94,10 +94,8 @@ pub struct PasswordChangeDataDTO {
     pub new_pw: String,
 }
 
-#[derive(Debug, ToSchema)]
-#[schema(title = "UserPasswordChange")]
+#[derive(Debug)]
 pub struct UserPasswordChangeDTO {
-    #[schema(examples("d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"))]
     pub user_id: String,
     pub pw: PasswordChangeDataDTO,
 }
@@ -112,7 +110,7 @@ pub struct UserTokenDTO {
     // pub refresh_token: String,
     #[schema(examples("Bearer"))]
     pub token_type: String,
-    #[schema(examples("900"))]
+    #[schema(examples(900))]
     pub expires_in: u64,
 }
 

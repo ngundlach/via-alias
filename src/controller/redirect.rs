@@ -27,15 +27,16 @@ pub(crate) fn router() -> Router<AppContext> {
         .route("/api/redirects/{alias}", delete(delete_redirect_handler))
 }
 
-#[utoipa::path(delete, 
+#[utoipa::path(delete,
     path = "/api/redirects/{alias}",
-    tag="redirects", 
+    tag = "Redirects",
     security(("bearer_auth" = [])),
-    description = "Delete redirect. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+    summary = "Delete redirect",
+    description = "Deletes a redirect via its alias. Users can only delete redirects they have created. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
     params(
         ("alias" = String, Path, description = "The redirect alias."),
     ),
-    operation_id="delete_redirect", 
+    operation_id="delete_redirect",
     responses(
         (status = StatusCode::NO_CONTENT, description = "No Content. Redirect deleted successfully."),
         (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. No valid access token."),
@@ -52,12 +53,13 @@ async fn delete_redirect_handler(
         .await?;
     Ok(StatusCode::NO_CONTENT.into_response())
 }
-#[utoipa::path(get, 
+#[utoipa::path(get,
     path = "/api/redirects",
-    tag="redirects", 
+    tag = "Redirects",
     security(("bearer_auth" = [])),
-    description = "Get a list of all redirects owned by the current user. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
-    operation_id="get_user_redirects_list", 
+    summary = "Get redirects",
+    description = "Returns a list of all redirects owned by the current user. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
+    operation_id="get_user_redirects_list",
     responses(
         (status = StatusCode::OK, description = "Ok. Returns list of redirects.", body = RedirectListDTO),
         (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. No valid access token."),
@@ -73,13 +75,14 @@ async fn get_all_user_redirects_handler(
     Ok(Json(redirects).into_response())
 }
 
-#[utoipa::path(post, 
+#[utoipa::path(post,
     path = "/api/redirects",
-    tag="redirects", 
-    description = "Create a new redirect. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+    tag = "Redirects",
+    summary = "Create redirect",
+    description = "Creates a new redirect. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
     security(("bearer_auth" = [])),
     request_body = RedirectDTO,
-    operation_id="create_redirect", 
+    operation_id="create_redirect",
     responses(
         (status = StatusCode::CREATED, description = "Created. Returns list of redirects.", body = RedirectDTO),
         (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. No valid access token."),
@@ -102,21 +105,23 @@ async fn create_redirect_handler(
     Ok((StatusCode::CREATED, Json(payload)).into_response())
 }
 
-#[utoipa::path(get, 
+#[utoipa::path(get,
     path = "/{alias}",
-    tag="redirects", 
-    description = "Follow the redirect.",
+    tag = "Redirects",
+    summary = "Follow redirect",
+    description = "Returns a tomporary redirect response with the registered redirect url in the location header. Supposed to be opened in a browser.",
     params(
         ("alias" = String, Path, description = "The redirect alias."),
     ),
-    operation_id="follow_redirect", 
+    security(),
+    operation_id="follow_redirect",
     responses(
-        (status = StatusCode::NOT_FOUND, description = "Not Found. Redirect doesn't exist."), 
+        (status = StatusCode::NOT_FOUND, description = "Not Found. Redirect doesn't exist."),
         (status = StatusCode::TEMPORARY_REDIRECT, description = "Temporary Redirect. Follow redirect",
             headers(
                 ("Location" = String, description = "URL of the created resource")
             )
-        ) 
+        )
     )
 )]
 pub(crate) async fn follow_redirect_handler(
@@ -127,15 +132,17 @@ pub(crate) async fn follow_redirect_handler(
     Ok(Redirect::temporary(&redirect.url).into_response())
 }
 
-#[utoipa::path(patch, 
+#[utoipa::path(patch,
     path = "/api/redirects/{alias}",
-    tag="redirects", 
-    description = "Create a new redirect. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+    tag = "Redirects",
+    summary = "Update redirect",
+    description = "Updates the registered url of a redirect. Changing the alias requires deleting the redirect and recreating it with the desired alias.
+    Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
     params(
         ("alias" = String, Path, description = "The redirect alias."),
     ),
     security(("bearer_auth" = [])),
-    operation_id="update_redirect", 
+    operation_id="update_redirect",
     responses(
         (status = StatusCode::OK, description = "Ok. Changed the url of the redirect.", body = RedirectDTO),
         (status = StatusCode::NOT_FOUND, description = "Not Found. Redirect doesn't exist."),

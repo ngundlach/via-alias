@@ -29,12 +29,13 @@ pub(crate) fn router() -> Router<AppContext> {
         .layer(axum::middleware::from_fn(middleware::is_admin_middleware))
 }
 
-#[utoipa::path(get, 
-    path = "/api/admin/reg_token", 
-    tag="admin", 
-    description = "Request a user registration token. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+#[utoipa::path(get,
+    path = "/api/admin/reg_token",
+    tag = "Admin",
+    summary = "Generate user registration token",
+    description = "Requests a user registration token. This token is only valid for one-time use and has an expiration time in seconds. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
     security(("bearer_auth" = [])),
-    operation_id="reg_token_request", 
+    operation_id="reg_token_request",
     responses(
         (status = StatusCode::OK, description = "Success. Returns valid registration token", body = UserRegistrationTokenDTO),
         (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. No valid access token."),
@@ -53,12 +54,13 @@ async fn request_user_registration_token_handler(
     }
 }
 
-#[utoipa::path(get, 
+#[utoipa::path(get,
     path = "/api/admin/redirects",
-    tag="admin", 
-    description = "Get a list of all currently created redirects. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+    tag = "Admin",
+    summary = "Get all redirects",
+    description = "Returns a list of all currently created redirects. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
     security(("bearer_auth" = [])),
-    operation_id="get_all_redirects", 
+    operation_id="get_all_redirects",
     responses(
         (status = StatusCode::OK, description = "Success. Returns a list of all currently created redirects", body = FullRedirectListDTO),
         (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. No valid access token."),
@@ -74,13 +76,14 @@ async fn get_all_redirects_admin_handler(
     }
 }
 
-#[utoipa::path(delete, 
+#[utoipa::path(delete,
     path = "/api/admin/redirects/{id}",
     params(
         ("id" = String, Path, description = "The redirect id."),
     ),
-    tag="admin", 
-    description = "Delete a redirect via its id. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+    tag = "Admin",
+    summary = "Delete redirect via id",
+    description = "Deletes a redirect via its id. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
     security(("bearer_auth" = [])),
     operation_id="delete_redirect_by_id",
     responses(
@@ -104,15 +107,16 @@ async fn delete_redirect_admin_handler(
     }
 }
 
-#[utoipa::path(get, 
+#[utoipa::path(get,
     path = "/api/admin/users/{id}",
     params(
         ("id" = String, Path, description = "The user id."),
     ),
-    tag="admin", 
-    description = "Get data about specific user. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+    tag = "Admin",
+    summary = "Get user data",
+    description = "Returns data about a specific user. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
     security(("bearer_auth" = [])),
-    operation_id="get_user_data_admin", 
+    operation_id="get_user_data_admin",
     responses(
         (status = StatusCode::OK, description = "Ok. Returns persisted userdata.", body = UserDTO),
         (status = StatusCode::NOT_FOUND, description = "Not Found. User doesn't exist."),
@@ -131,12 +135,13 @@ async fn user_info_admin_handler(
     }
 }
 
-#[utoipa::path(get, 
+#[utoipa::path(get,
     path = "/api/admin/users",
-    tag="admin", 
-    description = "Get a list of all users. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+    tag = "Admin",
+    summary = "Get all users",
+    description = "Returns a list of all users. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
     security(("bearer_auth" = [])),
-    operation_id="get_all_users_data_admin", 
+    operation_id="get_all_users_data_admin",
     responses(
         (status = StatusCode::OK, description = "Ok. Returns list of persisted userdata.", body = UserListDTO),
         (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. No valid access token."),
@@ -150,15 +155,16 @@ async fn all_users_info_admin_handler(State(app_context): State<AppContext>) -> 
     }
 }
 
-#[utoipa::path(delete, 
+#[utoipa::path(delete,
     path = "/api/admin/users/{id}",
     params(
         ("id" = String, Path, description = "The user id."),
     ),
-    tag="admin", 
-    description = "Delete a user. This will also delete all of the users registered redirects. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+    tag = "Admin",
+    summary = "Delete a user",
+    description = "Deletes a user via its uiserid. This will also delete all of the users registered redirects. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
     security(("bearer_auth" = [])),
-    operation_id="delete_user", 
+    operation_id="delete_user",
     responses(
         (status = StatusCode::OK, description = "Ok. Returns userid and amount of deleted redirects", body = DeletedUserDTO),
         (status = StatusCode::NOT_FOUND, description = "Not Found. User doesn't exist."),

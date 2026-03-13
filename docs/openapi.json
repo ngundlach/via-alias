@@ -1,20 +1,28 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "via-alias",
-    "description": "",
+    "title": "Via-Alias API",
+    "description": "API for [Via-Alias](https://github.com/ngundlach/via-alias). This API can be used to create and manage redirects as well as users.\n        <br><br>**Authentication:**<br>\n        Most Endpoints require a Bearer token obtained from `POST /api/auth/login`.\n        Include it in the `Authorization` header as `Bearer <token>`.",
     "license": {
-      "name": ""
+      "name": "MIT",
+      "identifier": "MIT"
     },
-    "version": "0.1.10"
+    "version": "0.1.11"
   },
+  "servers": [
+    {
+      "url": "https://example.com",
+      "description": "Example:"
+    }
+  ],
   "paths": {
     "/api/admin/redirects": {
       "get": {
         "tags": [
-          "admin"
+          "Admin"
         ],
-        "description": "Get a list of all currently created redirects. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Get all redirects",
+        "description": "Returns a list of all currently created redirects. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "get_all_redirects",
         "responses": {
           "200": {
@@ -44,10 +52,11 @@
     "/api/admin/redirects/{id}": {
       "delete": {
         "tags": [
-          "admin"
+          "Admin"
         ],
-        "description": "Delete a redirect via its id. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
-        "operationId": "delete_redirect",
+        "summary": "Delete redirect via id",
+        "description": "Deletes a redirect via its id. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
+        "operationId": "delete_redirect_by_id",
         "parameters": [
           {
             "name": "id",
@@ -83,9 +92,10 @@
     "/api/admin/reg_token": {
       "get": {
         "tags": [
-          "admin"
+          "Admin"
         ],
-        "description": "Request a user registration token. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Generate user registration token",
+        "description": "Requests a user registration token. This token is only valid for one-time use and has an expiration time in seconds. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "reg_token_request",
         "responses": {
           "200": {
@@ -115,9 +125,10 @@
     "/api/admin/users": {
       "get": {
         "tags": [
-          "admin"
+          "Admin"
         ],
-        "description": "Get a list of all users. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Get all users",
+        "description": "Returns a list of all users. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "get_all_users_data_admin",
         "responses": {
           "200": {
@@ -147,9 +158,10 @@
     "/api/admin/users/{id}": {
       "get": {
         "tags": [
-          "admin"
+          "Admin"
         ],
-        "description": "Get data about specific user. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Get user data",
+        "description": "Returns data about a specific user. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "get_user_data_admin",
         "parameters": [
           {
@@ -191,9 +203,10 @@
       },
       "delete": {
         "tags": [
-          "admin"
+          "Admin"
         ],
-        "description": "Delete a user. This will also delete all of the users registered redirects. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Delete a user",
+        "description": "Deletes a user via its uiserid. This will also delete all of the users registered redirects. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "delete_user",
         "parameters": [
           {
@@ -237,9 +250,10 @@
     "/api/auth/login": {
       "post": {
         "tags": [
-          "login"
+          "Auth"
         ],
-        "description": "Log user in. Request a user access token.",
+        "summary": "Login",
+        "description": "Authenticates a user with their credentials and returns a signed JWT access token on success.\n    The token should be included in subsequent requests as a Bearer token in the `Authorization` header.",
         "operationId": "login",
         "requestBody": {
           "content": {
@@ -265,15 +279,17 @@
           "401": {
             "description": "Unauthorized. Invalid username or password"
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/redirects": {
       "get": {
         "tags": [
-          "redirects"
+          "Redirects"
         ],
-        "description": "Get a list of all redirects owned by the current user. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Get redirects",
+        "description": "Returns a list of all redirects owned by the current user. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "get_user_redirects_list",
         "responses": {
           "200": {
@@ -298,9 +314,10 @@
       },
       "post": {
         "tags": [
-          "redirects"
+          "Redirects"
         ],
-        "description": "Create a new redirect. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Create redirect",
+        "description": "Creates a new redirect. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "create_redirect",
         "requestBody": {
           "content": {
@@ -343,9 +360,10 @@
     "/api/redirects/{alias}": {
       "delete": {
         "tags": [
-          "redirects"
+          "Redirects"
         ],
-        "description": "Delete redirect. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Delete redirect",
+        "description": "Deletes a redirect via its alias. Users can only delete redirects they have created. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "delete_redirect",
         "parameters": [
           {
@@ -377,9 +395,10 @@
       },
       "patch": {
         "tags": [
-          "redirects"
+          "Redirects"
         ],
-        "description": "Create a new redirect. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Update redirect",
+        "description": "Updates the registered url of a redirect. Changing the alias requires deleting the redirect and recreating it with the desired alias.\n    Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "update_redirect",
         "parameters": [
           {
@@ -433,9 +452,10 @@
     "/api/users/info": {
       "get": {
         "tags": [
-          "users"
+          "Users"
         ],
-        "description": "Get userdata about own useraccount. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Get own userdata",
+        "description": "Returns userdata about the current user. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "get_user_data",
         "responses": {
           "200": {
@@ -462,15 +482,16 @@
     "/api/users/password": {
       "patch": {
         "tags": [
-          "users"
+          "Users"
         ],
-        "description": "Change user-password. Requires authentication. Pass a JWT as a bearer token in the Authorization header.",
+        "summary": "Change password",
+        "description": "Changes the user-password. Requires authentication. Pass a JWT as a bearer token in the `Authorization` header.",
         "operationId": "change_password",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserPasswordChangeDTO"
+                "$ref": "#/components/schemas/PasswordChangeDataDTO"
               }
             }
           },
@@ -497,9 +518,10 @@
     "/api/users/register": {
       "post": {
         "tags": [
-          "users"
+          "Users"
         ],
-        "description": "Register a new user. Requires a generated user registration token.",
+        "summary": "Register new user",
+        "description": "Registers a new user. Requires a generated user registration token.",
         "operationId": "register_user",
         "requestBody": {
           "content": {
@@ -528,7 +550,8 @@
           "409": {
             "description": "Conflict. A user with that name already exists."
           }
-        }
+        },
+        "security": []
       }
     },
     "/healthcheck": {
@@ -536,20 +559,24 @@
         "tags": [
           "healthcheck"
         ],
+        "summary": "healtcheck",
+        "description": "Check if the service is running",
         "operationId": "healthcheck",
         "responses": {
           "200": {
             "description": "Via-Alias is running"
           }
-        }
+        },
+        "security": []
       }
     },
     "/{alias}": {
       "get": {
         "tags": [
-          "redirects"
+          "Redirects"
         ],
-        "description": "Follow the redirect.",
+        "summary": "Follow redirect",
+        "description": "Returns a tomporary redirect response with the registered redirect url in the location header. Supposed to be opened in a browser.",
         "operationId": "follow_redirect",
         "parameters": [
           {
@@ -577,7 +604,8 @@
           "404": {
             "description": "Not Found. Redirect doesn't exist."
           }
-        }
+        },
+        "security": []
       }
     }
   },
@@ -596,7 +624,9 @@
           },
           "user_id": {
             "type": "string",
-            "example": "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"
+            "examples": [
+              "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"
+            ]
           }
         }
       },
@@ -610,7 +640,9 @@
           "redirects": {
             "type": "integer",
             "format": "int64",
-            "example": 5,
+            "examples": [
+              5
+            ],
             "minimum": 0
           }
         }
@@ -640,11 +672,15 @@
         "properties": {
           "current_pw": {
             "type": "string",
-            "example": "superjedimeister1337"
+            "examples": [
+              "superjedimeister1337"
+            ]
           },
           "new_pw": {
             "type": "string",
-            "example": "kfdslfoi32j4ekil32jm"
+            "examples": [
+              "kfdslfoi32j4ekil32jm"
+            ]
           }
         }
       },
@@ -660,19 +696,27 @@
         "properties": {
           "alias": {
             "type": "string",
-            "example": "gh"
+            "examples": [
+              "gh"
+            ]
           },
           "id": {
             "type": "string",
-            "example": "ea07b388-0da5-4640-b30d-2f90467a612c"
+            "examples": [
+              "ea07b388-0da5-4640-b30d-2f90467a612c"
+            ]
           },
           "owner": {
             "type": "string",
-            "example": "7484bf63-0c9a-41af-884e-e0fea7f0bb8e"
+            "examples": [
+              "7484bf63-0c9a-41af-884e-e0fea7f0bb8e"
+            ]
           },
           "url": {
             "type": "string",
-            "example": "http://www.github.com"
+            "examples": [
+              "http://www.github.com"
+            ]
           }
         }
       },
@@ -686,11 +730,15 @@
         "properties": {
           "alias": {
             "type": "string",
-            "example": "gh"
+            "examples": [
+              "gh"
+            ]
           },
           "url": {
             "type": "string",
-            "example": "http://www.github.com"
+            "examples": [
+              "http://www.github.com"
+            ]
           }
         }
       },
@@ -719,11 +767,15 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "b208ae42-2ab8-47b9-9c69-bdd7300e5847"
+            "examples": [
+              "b208ae42-2ab8-47b9-9c69-bdd7300e5847"
+            ]
           },
           "name": {
             "type": "string",
-            "example": "vader"
+            "examples": [
+              "vader"
+            ]
           }
         }
       },
@@ -736,7 +788,9 @@
         "properties": {
           "url": {
             "type": "string",
-            "example": "http://my-new-redirect-url.de"
+            "examples": [
+              "http://my-new-redirect-url.de"
+            ]
           }
         }
       },
@@ -750,11 +804,15 @@
         "properties": {
           "name": {
             "type": "string",
-            "example": "luke"
+            "examples": [
+              "luke"
+            ]
           },
           "pw": {
             "type": "string",
-            "example": "superjedimeister1337"
+            "examples": [
+              "superjedimeister1337"
+            ]
           }
         }
       },
@@ -769,15 +827,21 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"
+            "examples": [
+              "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"
+            ]
           },
           "is_admin": {
             "type": "boolean",
-            "example": "false"
+            "examples": [
+              false
+            ]
           },
           "name": {
             "type": "string",
-            "example": "luke"
+            "examples": [
+              "luke"
+            ]
           }
         }
       },
@@ -796,23 +860,6 @@
           }
         }
       },
-      "UserPasswordChangeDTO": {
-        "type": "object",
-        "title": "UserPasswordChange",
-        "required": [
-          "user_id",
-          "pw"
-        ],
-        "properties": {
-          "pw": {
-            "$ref": "#/components/schemas/PasswordChangeDataDTO"
-          },
-          "user_id": {
-            "type": "string",
-            "example": "d64bcaad-8d86-48d2-b1f3-f1c03ac30fa3"
-          }
-        }
-      },
       "UserRegistrationDTO": {
         "type": "object",
         "title": "UserRegistration",
@@ -824,15 +871,21 @@
         "properties": {
           "name": {
             "type": "string",
-            "example": "vader"
+            "examples": [
+              "vader"
+            ]
           },
           "pw": {
             "type": "string",
-            "example": "deathstar_pilot_extra_ordinaire1337"
+            "examples": [
+              "deathstar_pilot_extra_ordinaire1337"
+            ]
           },
           "token": {
             "type": "string",
-            "example": "8162f4c7-e32e-45bc-9089-bfd9d024e39e"
+            "examples": [
+              "8162f4c7-e32e-45bc-9089-bfd9d024e39e"
+            ]
           }
         }
       },
@@ -840,12 +893,23 @@
         "type": "object",
         "title": "UserRegistrationToken",
         "required": [
-          "registration_token"
+          "registration_token",
+          "token_ttl"
         ],
         "properties": {
           "registration_token": {
             "type": "string",
-            "example": "85e83a5a-4f49-4ea7-9df9-93c2c2cc9b8f"
+            "examples": [
+              "85e83a5a-4f49-4ea7-9df9-93c2c2cc9b8f"
+            ]
+          },
+          "token_ttl": {
+            "type": "integer",
+            "format": "int64",
+            "examples": [
+              1800
+            ],
+            "minimum": 0
           }
         }
       },
@@ -860,17 +924,23 @@
         "properties": {
           "access_token": {
             "type": "string",
-            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoiMjE1ZDU3YzAtMDM1My00Nzc2LWFjNTYtZDBiZWY5YTUxZTJjIiwiaXNfYWRtaW4iOmZhbHNlLCJleHAiOjE3NzI4OTczOTMsImp0aSI6IjRiZTcyNTUwLTZlYTUtNGQ3NS1iM2Q4LTdiNzJiYTEwZjE1MiJ9.qwy7zLn611SkZzI5mFJPwtRGjvjD0xmprSoMUII7xjcxRPjAbTEKH9gFIewYRGdwtcg0I-EhnttYMNZkqlmZNQ"
+            "examples": [
+              "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoiMjE1ZDU3YzAtMDM1My00Nzc2LWFjNTYtZDBiZWY5YTUxZTJjIiwiaXNfYWRtaW4iOmZhbHNlLCJleHAiOjE3NzI4OTczOTMsImp0aSI6IjRiZTcyNTUwLTZlYTUtNGQ3NS1iM2Q4LTdiNzJiYTEwZjE1MiJ9.qwy7zLn611SkZzI5mFJPwtRGjvjD0xmprSoMUII7xjcxRPjAbTEKH9gFIewYRGdwtcg0I-EhnttYMNZkqlmZNQ"
+            ]
           },
           "expires_in": {
             "type": "integer",
             "format": "int64",
-            "example": "900",
+            "examples": [
+              900
+            ],
             "minimum": 0
           },
           "token_type": {
             "type": "string",
-            "example": "Bearer"
+            "examples": [
+              "Bearer"
+            ]
           }
         }
       }
@@ -882,5 +952,23 @@
         "bearerFormat": "JWT"
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Endpoints that handle user authentication."
+    },
+    {
+      "name": "Redirects",
+      "description": "These endpoints handle redirect management."
+    },
+    {
+      "name": "Users",
+      "description": "These endpoints handle user management."
+    },
+    {
+      "name": "Admin",
+      "description": "Admin management endpoints. All these endpoints require a valid JWT with admin claims."
+    }
+  ]
 }

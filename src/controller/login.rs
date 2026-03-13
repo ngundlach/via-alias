@@ -9,12 +9,15 @@ pub fn router() -> Router<AppContext> {
     Router::new().route("/api/auth/login", post(login_user_handler))
 }
 
-#[utoipa::path(post, 
+#[utoipa::path(post,
     path = "/api/auth/login",
-    tag="login", 
-    description = "Log user in. Request a user access token.",
-    request_body = UserCredentialsDTO, 
-    operation_id="login", 
+    tag = "Auth",
+    summary = "Login",
+    description = "Authenticates a user with their credentials and returns a signed JWT access token on success.
+    The token should be included in subsequent requests as a Bearer token in the `Authorization` header.",
+    request_body = UserCredentialsDTO,
+    security(),
+    operation_id="login",
     responses(
         (status = StatusCode::OK, description = "User authenticated. Returns valid JWT access token.", body = UserTokenDTO),
         (status = StatusCode::UNAUTHORIZED, description = "Unauthorized. Invalid username or password"),
