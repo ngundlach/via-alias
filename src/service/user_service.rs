@@ -238,6 +238,7 @@ impl UserService for UserServiceImpl {
             .await?;
         Ok(UserRegistrationTokenDTO {
             registration_token: token.registration_token,
+            token_ttl: app_config.reg_token_ttl,
         })
     }
 }

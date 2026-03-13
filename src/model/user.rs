@@ -127,6 +127,8 @@ pub struct UserClaimsDTO {
 pub struct UserRegistrationTokenDTO {
     #[schema(examples("85e83a5a-4f49-4ea7-9df9-93c2c2cc9b8f"))]
     pub registration_token: String,
+    #[schema(examples(1800))]
+    pub token_ttl: u64,
 }
 
 #[derive(Deserialize, Debug, ToSchema)]
