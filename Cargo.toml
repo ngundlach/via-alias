@@ -16,6 +16,7 @@ jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 tokio-util = "0.7.18"
 utoipa = { version = "5.4.0", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+clap = { version = "4.6.0", features = ["derive"] }
 
 [profile.release]
 opt-level = "s"

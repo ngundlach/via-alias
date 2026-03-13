@@ -15,6 +15,7 @@ use std::{env, error::Error, fs::read_to_string, net::SocketAddr, sync::Arc, tim
 use axum::{Router, routing::get};
 use sqlx::{Pool, Sqlite, migrate::MigrateDatabase};
 use tokio::signal;
+use utoipa::OpenApi;
 
 use crate::{
     controller::{admin, health_check, login, redirect, user},
@@ -115,6 +116,11 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
         jwt_config,
         reg_token_ttl,
     })
+}
+
+pub fn get_api_doc() -> Result<String, Box<dyn Error>> {
+    let doc = api_doc::ApiDoc::openapi().to_pretty_json()?;
+    Ok(doc)
 }
 
 fn create_router(context: AppContext) -> Router {
