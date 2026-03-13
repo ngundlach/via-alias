@@ -19,13 +19,13 @@ and Axum, but it can theoretically be used.
   - [Podman](#podman)
 - [Configuration](#configuration)
 - [Building with Docker](#building-with-docker)
-  - [Building with Docker-compose](#building-with-docker-compose)
+  - [Building with Docker Compose](#building-with-docker-compose)
 
 ---
 
 ## API Documentation
 
-The OpenApi-Spec for the latest Via-Alias release is available [here](./docs/openapi.json). Via-Alias also comes with
+The OpenApi-Spec for the latest Via-Alias release is available [here](https://ngundlach.github.io/via-alias/). Via-Alias also comes with
 a Swagger-UI Endpoint at
 
 ```http
@@ -91,7 +91,7 @@ The Port is mapped to 6789 and a named volume is mounted at `/via_data/via-alias
 Docker only supports secrets in Swarm mode, so we will have to inject the secret
 as an environment variable.
 
-### docker-compose
+### Docker Compose
 
 Save the secret to a file:
 
@@ -221,7 +221,7 @@ This will run a container based on the newly created image and create a volume
 named `via_alias` for persistence mounted to the required directory. The port is
 mapped to `6789`.
 
-### Building with Docker-compose
+### Building with Docker Compose
 
 ```yaml
 services:
