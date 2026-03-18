@@ -100,7 +100,8 @@ impl UserService for UserServiceImpl {
         let token = self
             .user_registration_token_repo
             .read_token(registration_token)
-            .await?;
+            .await
+            .map_err(|_| DbServiceError::TokenInvalid)?;
 
         let created_user = self.register_user(user).await?;
 

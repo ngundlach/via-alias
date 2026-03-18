@@ -66,6 +66,7 @@ async fn change_user_password_handler(
         (status = StatusCode::CREATED, description = "Created. User registered successfully.", body = SimpleUserDTO),
         (status = StatusCode::CONFLICT, description="Conflict. A user with that name already exists."),
         (status = StatusCode::BAD_REQUEST, description="Bad Request. Password or username don't match requirements."),
+        (status = StatusCode::FORBIDDEN, description="Forbidden. Provided registration token is invalid."),
 ))]
 async fn register_user_handler(
     State(app_context): State<AppContext>,

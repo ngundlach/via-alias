@@ -547,6 +547,9 @@
           "400": {
             "description": "Bad Request. Password or username don't match requirements."
           },
+          "403": {
+            "description": "Forbidden. Provided registration token is invalid."
+          },
           "409": {
             "description": "Conflict. A user with that name already exists."
           }
