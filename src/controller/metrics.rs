@@ -4,9 +4,9 @@ use crate::AppContext;
 
 #[utoipa::path(get,
     path = "/metrics",
-    tag="metrics",
-    summary = "Prometheus metrics",
-    description = "Provides prometheus metrics",
+    tag="Metrics",
+    summary = "Prometheus scrapable metrics",
+    description = "Provides prometheus metrics for http access as counter and a summary for latency.",
     operation_id = "metrics",
     security(),
     responses(
