@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use axum::Router;
 use utoipa::{
     Modify, OpenApi,
@@ -5,6 +7,7 @@ use utoipa::{
 };
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::controller::metrics;
 use crate::model::{
     FullRedirectListDTO, PasswordChangeDataDTO, Redirect, RedirectDTO, RedirectListDTO,
     UpdateUrlDTO, UserCredentialsDTO, UserRegistrationDTO, UserRegistrationTokenDTO, UserTokenDTO,
@@ -32,7 +35,7 @@ use crate::{health_check, model::SimpleUserDTO};
         Most Endpoints require a Bearer token obtained from `POST /api/auth/login`.
         Include it in the `Authorization` header as `Bearer <token>`."
     ),
-    servers((url = "https://example.com", description = "Example:")),
+    servers((url = "/", description = "Your Server")),
     paths(
         login::login_user_handler,
         admin::request_user_registration_token_handler,
@@ -50,6 +53,7 @@ use crate::{health_check, model::SimpleUserDTO};
         redirect::delete_redirect_handler,
         redirect::follow_redirect_handler,
         health_check::health_check_handler,
+        metrics::metrics_handler,
     ),
     components(schemas(
         UserDTO, DeletedUserDTO, DeletedUserResourceDTO, SimpleUserDTO, UserListDTO, UserCredentialsDTO,
@@ -78,4 +82,15 @@ impl Modify for SecurityAddon {
 pub fn api_doc_router() -> Router {
     let ui = SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi());
     Router::new().merge(ui)
+}
+
+pub fn get_api_doc() -> Result<String, Box<dyn Error>> {
+    let mut doc = ApiDoc::openapi();
+    doc.servers = Some(vec![
+        utoipa::openapi::ServerBuilder::new()
+            .url("https://example.com")
+            .description(Some("Example server"))
+            .build(),
+    ]);
+    Ok(doc.to_pretty_json()?)
 }

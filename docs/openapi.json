@@ -12,7 +12,7 @@
   "servers": [
     {
       "url": "https://example.com",
-      "description": "Example:"
+      "description": "Example server"
     }
   ],
   "paths": {
@@ -568,6 +568,22 @@
         "responses": {
           "200": {
             "description": "Via-Alias is running"
+          }
+        },
+        "security": []
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Prometheus scrapable metrics",
+        "description": "Provides prometheus metrics for http access as counter and a summary for latency.",
+        "operationId": "metrics",
+        "responses": {
+          "200": {
+            "description": ""
           }
         },
         "security": []

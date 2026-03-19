@@ -12,7 +12,7 @@ struct Args {
 async fn main() {
     let args = Args::parse();
     if args.print_doc {
-        let doc = via_alias::get_api_doc();
+        let doc = via_alias::api_doc::get_api_doc();
         match doc {
             Ok(s) => println!("{s}"),
             Err(e) => {
