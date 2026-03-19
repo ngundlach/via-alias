@@ -13,6 +13,7 @@
 use std::{env, error::Error, fs::read_to_string, net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{Router, routing::get};
+use metrics_exporter_prometheus::PrometheusHandle;
 use sqlx::{Pool, Sqlite, migrate::MigrateDatabase};
 use tokio::signal;
 use utoipa::OpenApi;
@@ -32,6 +33,7 @@ mod data;
 mod middleware;
 mod model;
 mod service;
+mod telemetry;
 
 #[derive(Clone)]
 struct AppContext {
@@ -39,6 +41,7 @@ struct AppContext {
     redirect_service: Arc<dyn RedirectService + Send + Sync>,
     login_service: Arc<dyn LoginService + Send + Sync>,
     user_service: Arc<dyn UserService + Send + Sync>,
+    metrics: PrometheusHandle,
 }
 #[derive(Clone)]
 struct AppConfig {
@@ -62,11 +65,13 @@ fn create_app_context(pool: &Pool<Sqlite>, app_config: AppConfig) -> AppContext 
     let redirect_service = RedirectServiceImpl::new(redirect_repo);
     let user_service = UserServiceImpl::new(user_repo.clone(), user_registration_token_repo);
     let login_service = LoginServiceImpl::new(user_repo);
+    let metrics = telemetry::init_metrics();
     AppContext {
+        app_config,
         redirect_service: Arc::new(redirect_service),
         login_service: Arc::new(login_service),
         user_service: Arc::new(user_service),
-        app_config,
+        metrics,
     }
 }
 
@@ -135,9 +140,11 @@ fn create_router(context: AppContext) -> Router {
         .merge(user::user_router())
         .merge(login::router())
         .route("/{alias}", get(redirect::follow_redirect_handler))
+        .route("/metrics", get(controller::metrics::metrics_handler))
         .with_state(context)
         .merge(api_doc::api_doc_router())
         .route("/healthcheck", get(health_check::health_check_handler))
+        .layer(axum::middleware::from_fn(middleware::track_metrics))
 }
 
 pub async fn run_app() -> Result<(), Box<dyn Error>> {
