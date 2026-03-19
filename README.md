@@ -13,6 +13,7 @@ and Axum, but it can theoretically be used.
 ## Table of Contents
 
 - [API Documentation](#api-documentation)
+- [Metrics](#metrics)
 - [Getting started](#getting-started)
   - [Docker](#docker)
   - [Docker-compose](#docker-compose)
@@ -29,8 +30,50 @@ The OpenApi-Spec for the latest Via-Alias release is available [here](https://ng
 a Swagger-UI Endpoint at
 
 ```http
-/swagger-ui
+GET /swagger-ui
 ```
+
+---
+
+## Metrics
+
+A Prometheus-compatible scrape endpoint is available at:
+
+```http
+GET /metrics
+```
+
+### `http_requests_total` · Counter
+
+Total number of HTTP requests received.
+
+| Label    | Description           | Example           |
+| -------- | --------------------- | ----------------- |
+| `method` | HTTP method           | `GET`, `POST`     |
+| `path`   | Matched route pattern | `/api/auth/login` |
+| `status` | HTTP status code      | `200`, `404`      |
+
+### `http_request_duration_seconds` · Summary
+
+Request latency in seconds.
+
+| Label    | Description           | Example           |
+| -------- | --------------------- | ----------------- |
+| `method` | HTTP method           | `GET`, `POST`     |
+| `path`   | Matched route pattern | `/api/auth/login` |
+| `status` | HTTP status code      | `200`, `404`      |
+
+| Series                                            | Description                       |
+| ------------------------------------------------- | --------------------------------- |
+| `http_request_duration_seconds{quantile="0"}`     | Minimum latency                   |
+| `http_request_duration_seconds{quantile="0.5"}`   | Median latency                    |
+| `http_request_duration_seconds{quantile="0.9"}`   | 90th percentile                   |
+| `http_request_duration_seconds{quantile="0.95"}`  | 95th percentile                   |
+| `http_request_duration_seconds{quantile="0.99"}`  | 99th percentile                   |
+| `http_request_duration_seconds{quantile="0.999"}` | 99.9th percentile                 |
+| `http_request_duration_seconds{quantile="1"}`     | Maximum latency                   |
+| `http_request_duration_seconds_sum`               | Total sum of request durations    |
+| `http_request_duration_seconds_count`             | Total number of observed requests |
 
 ---
 
