@@ -59,8 +59,9 @@ impl IntoResponse for DbServiceError {
                 (StatusCode::BAD_REQUEST, Json(errors)).into_response()
             }
             DbServiceError::AuthError(_) => StatusCode::UNAUTHORIZED.into_response(),
-            DbServiceError::PermissionError(_) => StatusCode::FORBIDDEN.into_response(),
-            DbServiceError::TokenInvalid => StatusCode::FORBIDDEN.into_response(),
+            DbServiceError::PermissionError(_) | DbServiceError::TokenInvalid => {
+                StatusCode::FORBIDDEN.into_response()
+            }
             DbServiceError::ResourceConflict => StatusCode::CONFLICT.into_response(),
             DbServiceError::InvalidCredentials => StatusCode::BAD_REQUEST.into_response(),
         }

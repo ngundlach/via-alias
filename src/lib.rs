@@ -122,11 +122,6 @@ fn generate_app_config() -> Result<AppConfig, Box<dyn Error>> {
     })
 }
 
-// pub fn get_api_doc() -> Result<String, Box<dyn Error>> {
-//     let doc = api_doc::ApiDoc::openapi().to_pretty_json()?;
-//     Ok(doc)
-// }
-
 fn create_router(context: AppContext) -> Router {
     Router::new()
         .merge(redirect::router())

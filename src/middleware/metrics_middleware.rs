@@ -11,8 +11,7 @@ pub async fn track_metrics(req: Request, next: Next) -> Response {
     let path = req
         .extensions()
         .get::<MatchedPath>()
-        .map(|p| p.as_str().to_owned())
-        .unwrap_or_else(|| "UNMATCHED".to_owned());
+        .map_or_else(|| "UNMATCHED".to_owned(), |p| p.as_str().to_owned());
 
     let method = req.method().to_string();
 
