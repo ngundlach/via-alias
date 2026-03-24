@@ -59,8 +59,9 @@ struct JwtConfig {
 fn create_app_context(pool: &Pool<Sqlite>, app_config: AppConfig) -> AppContext {
     let redirect_repo = Arc::new(RedirectRepoSqliteImpl::new(pool.clone()));
     let user_repo = Arc::new(UserRepoSqliteImpl::new(pool.clone()));
-    let user_registration_token_repo = Arc::new(UserRegistrationTokenInMemoryImpl::new());
-    user_registration_token_repo.start_cleanup(Duration::from_hours(1));
+    let user_registration_token_repo = Arc::new(UserRegistrationTokenInMemoryImpl::with_cleanup(
+        Duration::from_hours(1),
+    ));
     let redirect_service = RedirectServiceImpl::new(redirect_repo);
     let user_service = UserServiceImpl::new(user_repo.clone(), user_registration_token_repo);
     let login_service = LoginServiceImpl::new(user_repo);

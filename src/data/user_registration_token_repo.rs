@@ -5,7 +5,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use tokio::sync::RwLock;
+use tokio::{sync::RwLock, time::Instant};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
@@ -17,7 +17,7 @@ use crate::{
 
 pub(crate) struct UserRegistrationTokenInMemoryImpl {
     token_store: Arc<RwLock<TokenStore>>,
-    cancel_token: CancellationToken,
+    cancel_token: Option<CancellationToken>,
 }
 struct TokenStore {
     tokens: HashMap<String, UserRegistrationToken>,
@@ -26,21 +26,36 @@ struct TokenStore {
 
 impl Drop for UserRegistrationTokenInMemoryImpl {
     fn drop(&mut self) {
-        self.cancel_token.cancel();
+        if let Some(token) = &self.cancel_token {
+            token.cancel();
+        }
     }
 }
 
 impl UserRegistrationTokenInMemoryImpl {
     pub fn new() -> Self {
-        let cancel_token = CancellationToken::new();
+        let token_store = Arc::new(RwLock::new(TokenStore {
+            tokens: HashMap::new(),
+            expirations: BTreeMap::new(),
+        }));
         Self {
-            cancel_token,
-            token_store: Arc::new(RwLock::new(TokenStore {
-                tokens: HashMap::new(),
-                expirations: BTreeMap::new(),
-            })),
+            cancel_token: None,
+            token_store,
         }
     }
+
+    pub fn with_cleanup(interval: Duration) -> Self {
+        let mut store = Self::new();
+        let cancel_token = CancellationToken::new();
+        tokio::spawn(Self::cleanup_task(
+            store.token_store.clone(),
+            cancel_token.clone(),
+            interval,
+        ));
+        store.cancel_token = Some(cancel_token);
+        store
+    }
+
     fn remove_from_store(guard: &mut TokenStore, token: &str) -> Result<(), DbServiceError> {
         let (_, token_data) = guard
             .tokens
@@ -56,32 +71,38 @@ impl UserRegistrationTokenInMemoryImpl {
         Ok(())
     }
 
-    pub(crate) fn start_cleanup(self: &Arc<Self>, cleanup_interval: Duration) {
-        let repo = self.clone();
-        let cancel_token = self.cancel_token.clone();
-        tokio::spawn(async move {
-            let mut timer = tokio::time::interval(cleanup_interval);
-
-            loop {
-                tokio::select! {
+    async fn cleanup_task(
+        token_store: Arc<RwLock<TokenStore>>,
+        cancel_token: CancellationToken,
+        interval: Duration,
+    ) {
+        let start = Instant::now() + interval;
+        let mut timer = tokio::time::interval_at(start, interval);
+        timer.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        loop {
+            tokio::select! {
                     _ = timer.tick() => {
-                         repo.delete_expired_tokens().await;
+                    let mut guard = token_store.write().await;
+                         Self::delete_expired_tokens_inner(&mut guard);
                      }
                      () = cancel_token.cancelled() => {
                          break;
                      }
-                }
             }
-        });
+        }
     }
 
+    #[allow(dead_code)]
     async fn delete_expired_tokens(&self) {
+        let mut guard = self.token_store.write().await;
+        Self::delete_expired_tokens_inner(&mut guard);
+    }
+
+    fn delete_expired_tokens_inner(guard: &mut TokenStore) {
         let current_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("system clock is before Unix epoch")
             .as_secs();
-
-        let mut guard = self.token_store.write().await;
 
         let expired_keys: Vec<u64> = guard
             .expirations
@@ -316,13 +337,7 @@ mod tests {
     async fn test_multiple_tokens_same_expiry_bucket_cleaned_up_correctly() {
         let store = UserRegistrationTokenInMemoryImpl::new();
 
-        let shared_exp: u64 = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .checked_add(Duration::from_hours(1))
-            .unwrap()
-            .as_secs();
-
+        let shared_exp = future_time();
         let token_a = UserRegistrationToken {
             registration_token: "token-a".to_string(),
             exp_at: shared_exp,
