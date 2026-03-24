@@ -20,14 +20,14 @@ pub async fn track_metrics(req: Request, next: Next) -> Response {
     let latency = start.elapsed().as_secs_f64();
     let status = response.status().as_u16().to_string();
 
-    histogram!("http_request_duration_seconds",
+    histogram!("via_alias_http_request_duration_seconds",
         "method" => method.clone(),
         "path" => path.clone(),
         "status" => status.clone()
     )
     .record(latency);
 
-    counter!("http_requests_total",
+    counter!("via_alias_http_requests_total",
         "method" => method,
         "path" => path,
         "status" => status
